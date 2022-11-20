@@ -27,6 +27,197 @@ df_to_mat <- function(df){
 	return(mat)
 }
 
+
+################ make the 2 matrix equal !!! ##############
+################ input is the log matrix !!! ###########
+
+equal_matrix <- function(query_mat,ref_mat){
+	##########
+	genes_overlap = rownames(query_mat)[which(rownames(query_mat) %in% rownames(ref_mat) == T)]
+	########## head(rownames(query_mat2))
+	m = match(genes_overlap,rownames(query_mat))
+	query_mat2 = query_mat[m,]
+	########## head(rownames(ref_mat2))
+	m = match(genes_overlap,rownames(ref_mat))
+	ref_mat2 = ref_mat[m,]
+	########## OK !!!! Then normalize !!!! ########
+	##########
+	ref_mat_input3 = exp(ref_mat2)-1
+	#print(head(colSums(ref_mat_input3)))
+	query_mat_input3 = exp(query_mat2)-1
+	#print(colSums(query_mat_input3))
+	##########
+	combined_mat = cbind(query_mat_input3,ref_mat_input3)
+	#######
+	combined_mat_norm = limma::normalizeBetweenArrays(combined_mat,method="quantile")
+	combined_mat_norm = log(combined_mat_norm+1)
+	combined_mat_norm = round(combined_mat_norm,2)
+	#######
+	query_mat_input4 = combined_mat_norm[,1:dim(query_mat_input3)[2]]
+	ref_mat_input4 = combined_mat_norm[,-c(1:dim(query_mat_input3)[2])]
+	#######
+	outputlist = list(query_mat_input4,ref_mat_input4)
+	return(outputlist)
+}
+
+
+
+selection_DEGs <- function(all_used_genes,ref_marker,Top=50){
+	#### class(ref_marker) ######
+	res = apply(ref_marker,2,function(x) length(which(x %in% all_used_genes == T)))
+	num = min(res)
+	####
+	num_new = min(num,Top)
+	#### OK!! Then see the Top genes !!!! #######
+	ref_marker_cl = ref_marker[1:num_new,]
+	####
+	ref_marker_cl = reshape2::melt(as.matrix(ref_marker_cl))
+	####
+	all_markers = ref_marker_cl$value
+	all_markers = all_markers[!duplicated(all_markers)]
+	####
+	return(all_markers)
+}
+
+
+
+calculate_Cor <- function(query_mat_input,ref_mat_input,DEGs_overlap){
+	k1 = which(DEGs_overlap %in% rownames(query_mat_input) == T)
+	k2 = which(DEGs_overlap %in% rownames(ref_mat_input) == T)
+	k3 = k1[which(k1 %in% k2 == T)]
+	DEGs_overlap = DEGs_overlap[k3]
+	######
+	query_mat_input_cl = query_mat_input[which(rownames(query_mat_input) %in% DEGs_overlap == T),]
+	ref_mat_input_cl = ref_mat_input[which(rownames(ref_mat_input) %in% DEGs_overlap == T),]
+	######
+	######
+	m1 = match(DEGs_overlap,rownames(query_mat_input_cl))
+	m2 = match(DEGs_overlap,rownames(ref_mat_input_cl))
+	query_mat_input_cl= query_mat_input_cl[m1,]
+	ref_mat_input_cl= ref_mat_input_cl[m2,]
+	######
+	merge_mat = cbind(query_mat_input_cl,ref_mat_input_cl)
+	Cor_res <- pcaPP::cor.fk(merge_mat)
+	###### split the Cor_res #######
+	query_dim = dim(query_mat_input_cl)[2]
+	ref_dim = dim(ref_mat_input_cl)[2]
+	######
+	Cor_res = Cor_res[,-c(1:query_dim)]
+	Cor_res = Cor_res[c(1:query_dim),]
+	###### Then we output the most largest clusters ########
+	return(Cor_res)
+}
+
+
+Analysis_cor <- function(cor_res,lower_cutoff = 0.4){
+	####
+	# lower_cutoff = 0.35
+	###### print the max of cor_res ######
+	print(apply(cor_res,1,max))
+	######
+	cor_resv = as.vector(cor_res)
+	cor_resv = sort(cor_resv,decreasing=T)
+	######
+	model <- mclust::densityMclust(cor_resv,G=1:3)
+	###### First we need to know how many models !!!!#########
+	number_model = length(levels(as.factor(model$classification)))
+	######
+	###### Then we get the parameters for each model !!!! ####
+	######
+	model_mean_total = model$parameters$mean
+	model_sd_total = model$parameters$variance$sigmasq
+	######
+	if(length(model_sd_total) == 1){
+		model_sd_total = rep(model_sd_total,number_model)
+	}
+	###### OK!!! Next we find the cutoffs ########
+	if(number_model == 3){
+		#### we selected to 2!!! #####
+		#### we will find the sencond clusters ####
+		tmp_mean = model_mean_total[2]
+		tmp_sd = model_sd_total[2]
+		cutoff = qnorm(0.75,mean=tmp_mean,sd=sqrt(tmp_sd))
+	}
+	#######
+	if(number_model == 2){
+		#### we selected to 2!!! #####
+		#### we use the cutoff between the 2 peaks !!!! ##########
+		model_classification = as.numeric(model$classification)
+		k = which(model$classification %in% model$classification[1] == F)
+		index = max(cor_resv[k])
+		cutoff = index
+	}
+	if(number_model == 1){
+		#### we selected to 2!!! #####
+		#### we use the cutoff between the 2 peaks !!!! ##########
+		tmp_mean = model_mean_total[1]
+		tmp_sd = model_sd_total[1]
+		cutoff = qnorm(0.75,mean=tmp_mean,sd=sqrt(tmp_sd))
+	}
+	if(cutoff < lower_cutoff){
+		cutoff = lower_cutoff
+	}
+	#####
+	return(cutoff)
+}
+
+
+##################
+
+Res_mat_highest_celltype <- function(res_mat,cutoff){
+	res_list = list()
+	for(i in 1:dim(res_mat)[1]){
+		res_mat_tmp = res_mat[i,]
+		k = which(res_mat_tmp == max(res_mat_tmp))
+		max_cor = res_mat_tmp[k]
+		##### #######
+		k2 = which(res_mat_tmp <= max_cor & res_mat_tmp >= cutoff)
+		if(length(k2) == 0){
+			res_mat_tmp_k2 = "Unassigned"
+			res_list = c(res_list,list("Unassigned"))
+		}
+		if(length(k2) > 0){
+		##### #######
+			res_mat_tmp_k2 = res_mat_tmp[k2]
+			res_mat_tmp_k2 = sort(res_mat_tmp_k2,decreasing=T)
+			#####
+			if(length(res_mat_tmp_k2) >3){
+				res_mat_tmp_k2 = res_mat_tmp_k2[1:3]
+			}
+			res_list = c(res_list,list(names(res_mat_tmp_k2)))
+		}
+		######
+		######
+	}
+	names(res_list) = rownames(res_mat)
+	return(res_list)
+}
+
+
+##########
+runDEGs_Ref_sub <- function(Seurat_Obj,method='COSG',idents='celltype',num_of_genes = 100){
+	Idents(Seurat_Obj) = idents
+	#######
+	library(COSG)
+	#######
+	if(method == 'COSG'){
+		marker_cosg <- cosg(
+ 				Seurat_Obj,
+ 				groups=c('all'),
+ 				assay='RNA',
+ 				slot='data',
+ 				mu=1,
+ 				n_genes_user=num_of_genes)
+		res = marker_cosg$names
+		all_genes = res
+	}
+	#######
+	#######
+	return(all_genes)
+}
+
+
+################################
 ##### This is the functions for CellAnn_scmapcluster ######
 ##### the input file is the raw counts file ###############
 
@@ -63,7 +254,44 @@ CellAnn_scmapcluster = function(train,
 
 
 
+####### get avg mat functions ######
 
+CellAnn_Avg_Mat <- function(data_mat,data_cluster,log='log',scale_factor=10000){
+	######
+	tag_cluster = unname(data_cluster)
+	tag_cluster_level = levels(as.factor(tag_cluster))
+	###### normalized back datasets ######
+	if(log == 'log'){
+		data_mat_exp = exp(data_mat)
+		data_mat_exp = data_mat_exp-1
+	}
+	if(log == 'log2'){
+		data_mat_exp = 2^(data_mat)
+		data_mat_exp = data_mat_exp-1
+	}
+	print(paste('Sums:',head(colSums(data_mat_exp[,c(1:2)]))))
+	###### data_mat_exp is 1e5 normalize #######
+	merge_mat = c()
+	for(i in 1:length(tag_cluster_level)){
+		index = which(data_cluster %in% tag_cluster_level[i] == T)
+		index_mat = data_mat_exp[,index]
+		######
+		index_sum = rowSums(index_mat)
+		######
+		merge_mat = c(merge_mat,index_sum)
+	}
+	###
+	merge_mat = matrix(merge_mat,nrow=dim(data_mat)[1])
+	###
+	rownames(merge_mat) = rownames(data_mat)
+	colnames(merge_mat) = tag_cluster_level
+	### colSums(merge_mat)
+	scale = colSums(merge_mat)/scale_factor
+	merge_mat = sweep(merge_mat,2,scale,FUN='/')
+	### default norm ####
+	merge_mat = round(log(merge_mat+1),5)
+	return(merge_mat)
+}
 
 ###### This function convert cellAnn output #######
 ###### and compare the results with ground truth ######
