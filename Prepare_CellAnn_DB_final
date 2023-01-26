@@ -1,0 +1,1582 @@
+####
+#### this is the final script to prepare the raw data sets in the database ####
+####
+
+####
+####
+####
+
+#### First we write a function ####
+#### input is a folder ############
+#### search the seurat file in that folder ######
+####
+#### this is on the new server: ###
+####
+
+ssh plyu3@omb2.onc.jhmi.edu
+U[9C20&&
+
+conda activate seurat4
+
+#### I want to copy the folder to my own folder !!!! #####
+
+cp -r "/zp1/data/yzhai11/UCSC/" "/zp1/data/plyu3/UCSC/"
+
+####
+input_folder_example = "/zp1/data/plyu3/UCSC/pmid27667365_Human pancreas"
+input_folder = input_folder_example
+
+####
+####
+####
+####
+R
+
+Read_Seurat_file_in_the_folder_UCSC <- function(input_folder){
+	##### first we init a table ######
+	checked_items = c('Seurat_files_exists:','Seurat_file_celltypes:','Seurat_file_dims:','Seurat_file_matrix_equal:','Seurat_file_matrix_max:','Seurat_file_matrix_log:','Seurat_file_matrix_log2:','Seurat_file_matrix_counts:','Seurat_file_Genes:','Seurat_file_matrix_counts_sum:')
+	##### 
+	checked_table = data.frame(checked_items=checked_items,results="Need to check!")
+	##### loading library !!! #####
+	library(Seurat)
+	##### we first go into the folder ######
+	setwd(input_folder)
+	##### 'Seurat_files_exists:' #####
+	files = list.files()
+	#####
+	##### searching seurat files ########
+	##### 
+	k = grep("_seurat_obj$",files)
+	#####
+	if(length(k) != 1){
+		checked_table$results[1] = 'No file!'
+		write.table(checked_items,file='checked_items.txt',sep="\t",quote=F,row.names=F)
+		return(checked_items)
+	}
+	if(length(k) == 1){
+		checked_table$results[1] = 'OK!'
+		###### Next we will load the seurat objects !!!! ##########
+		seurat_file = files[k]
+		seurat_obj <- readRDS(seurat_file)
+		###### Next we will check whether celltype exists: ########
+		k1 = which(colnames(seurat_obj@meta.data) == "celltype")
+		if(length(k1) != 1){
+			checked_items$results[2] = 'No celltype!'
+			write.table(checked_table,file='checked_items.txt',sep="\t",quote=F,row.names=F)
+			return(checked_items)
+		}
+		if(length(k) == 1){
+			checked_table$results[2] = 'OK!'
+			###### Next we will check the dims !!!! ##############
+			k2 = which(colnames(seurat_obj@meta.data) %in% c("dim1","dim2","dim3") == T)
+			if(length(k2) < 2){
+				checked_table$results[3] = 'No dims!'
+				write.table(checked_table,file='checked_items.txt',sep="\t",quote=F,row.names=F)
+				return(checked_items)
+			}
+			if(length(k2) > 1){
+				checked_table$results[3] = 'OK!'
+				##### Next check whether matrix is equal!!! #######
+				##### RNA@data matrix and RNA@counts matrix #######
+				data_mat = seurat_obj[['RNA']]@data[1:100,1:100]
+				count_mat = seurat_obj[['RNA']]@counts[1:100,1:100]
+				#####
+				res = all.equal(data_mat,count_mat)
+				#####
+				checked_table$results[4] = res
+				#####
+				count_mat = seurat_obj[['RNA']]@counts[,1:100]
+				max = max(as.vector(count_mat))
+				#####
+				if(max < 20){
+					checked_table$results[5] = max
+				}
+				if(max > 50){
+					checked_table$results[5] = max
+				}
+				####### top5 sums #####
+				####
+				sums = as.character(round(Matrix::colSums(exp(count_mat))[1:5],2))
+				####
+				sums_res = paste(sums,collapse='::')
+				####
+				checked_table$results[6] = sums_res
+				####
+				sums = as.character(round(Matrix::colSums(2^(count_mat))[1:5],2))
+				sums_res = paste(sums,collapse='::')
+				checked_table$results[7] = sums_res
+				####
+				sums = as.character(round(Matrix::colSums(count_mat)[1:5],2))
+				sums_res = paste(sums,collapse='::')
+				checked_table$results[10] = sums_res
+				#### print the non-Zero number in the matrix #######
+				####
+				count_mat_v <- as.vector(count_mat)
+				count_mat_v = count_mat_v[which(count_mat_v > 0)]
+				count_mat_v = round(count_mat_v,3)
+				sums_res = paste(count_mat_v[1:5],collapse='::')
+				checked_table$results[8] = sums_res
+				#### 
+				######## Next we will check the genes !!! ##########
+				####
+				#### plot the first rownames of the seurat objects !!! #####
+				####
+				Genes = rownames(seurat_obj)[1:5]
+				####
+				sums_res = paste(Genes[1:5],collapse='::')
+				checked_table$results[9] = sums_res
+				####
+				write.table(checked_table,file='checked_items.txt',sep="\t",quote=F,row.names=F)
+				return(checked_table)
+			}
+		}
+	}
+	#####
+	#####
+}
+
+######
+######
+###### add dims from seurat objects metadata to seurat inside #######
+######
+######
+######
+###### ###### ######
+
+Prepare_Seurat_file_in_the_folder_UCSC <- function(input_folder,norm="log"){
+	#########
+	library(Seurat)
+	##### we first go into the folder ######
+	setwd(input_folder)
+	##### 'Seurat_files_exists:' #####
+	files = list.files()
+	#####
+	##### searching seurat files ########
+	##### 
+	k = grep("_seurat_obj$",files)
+	#####
+	#########
+	seurat_file = files[k]
+	seurat_obj <- readRDS(seurat_file)
+	print(dim(seurat_obj))
+	#########
+	if(dim(seurat_obj)[2] > 25000){
+		index = sample(1:dim(seurat_obj)[2],25000)
+		seurat_obj = seurat_obj[,index]
+	}
+	##### first we convert matrix to counts ##########
+	if(norm == "log"){
+		######
+		mat = seurat_obj[['RNA']]@counts
+		mat_new = exp(mat)-1
+		######
+	}
+	if(norm == "counts"){
+		######
+		mat = seurat_obj[['RNA']]@counts
+		mat_new = mat
+		######
+	}
+	if(norm == "log2"){
+		######
+		mat = seurat_obj[['RNA']]@counts
+		mat_new = 2^(mat)-1
+		######
+	}
+	#####
+	seurat_obj_new = CreateSeuratObject(mat_new)
+	seurat_obj_new@meta.data = seurat_obj@meta.data
+	#####
+	##### next we add dims to this seurat_obj #######
+	#####
+	dims_index = c("dim1","dim2","dim3")
+	k = match(dims_index,colnames(seurat_obj_new@meta.data))
+	k = k[is.na(k) == F]
+	UMAPs_mat = as.matrix(seurat_obj@meta.data[,k])
+	UMAPs_mat_new = Norm_UMAPs(UMAPs_mat)
+	#####
+	#####
+	#####
+	seurat_obj_new[['dims']] <- CreateDimReducObject(embeddings = UMAPs_mat_new, key = "dims_", assay = 'RNA')
+	#####
+	#png_file = paste0("dim_check.png")
+	#png(png_file,height=5000,width=6000,res=72*12)
+	#print(DimPlot(seurat_obj_new, reduction = "dims",group.by=c('celltype'),label = TRUE, label.size = 2.5, repel = TRUE,raster = FALSE))
+	#dev.off()
+	###### 
+	###### Next we will create the files #######
+	######
+	seurat_file_new = paste(seurat_file,'_new',sep="")
+	######
+	saveRDS(seurat_obj_new,file=seurat_file_new)
+}
+
+
+
+#### OK!!! ######
+#### then we write small functions ########
+####
+
+#### 这个是OK的 ！！！##### 
+####
+Norm_UMAPs <- function(UMAPs_mat){
+	#### each rows and cols norms to the -50 50 dims #######
+	####
+	UMAPs_mat_new = UMAPs_mat
+	####
+	for(i in 1:dim(UMAPs_mat)[2]){
+		tmp_vector = UMAPs_mat[,i]
+		tmp_vector_mean = tmp_vector - mean(tmp_vector)
+		tmp_vector_scale = 100 / (max(tmp_vector) - min(tmp_vector))
+		tmp_vector_norm = tmp_vector_mean*tmp_vector_scale
+		UMAPs_mat_new[,i] = round(tmp_vector_norm,3)
+	}
+	####
+	return(UMAPs_mat_new)
+}
+
+
+
+
+#### #####
+#### we will need to know the UCSC processing piplines #####
+#### #####
+
+####
+#### Next we will prepare the Dim files and the markers and the celltype submarkers #############
+#### Input is the seurat_obj ####################################################################
+#### call sub clusters and call sub markers #######
+####
+#### this is the runDEGs_Ref ######
+####
+
+runDEGs_Ref <- function(Seurat_Obj,method='COSG',idents='celltype',num_of_genes = 100){
+	Idents(Seurat_Obj) = idents
+	#######
+	library(COSG)
+	#######
+	if(method == 'COSG'){
+		marker_cosg <- cosg(
+ 				Seurat_Obj,
+ 				groups=c('all'),
+ 				assay='RNA',
+ 				slot='data',
+ 				mu=1,
+ 				n_genes_user=num_of_genes)
+		res = marker_cosg$names
+	}
+	#######
+	#######
+	return(res)
+}
+
+#####
+#####
+##### input is the log transformed matrix #######
+#####
+#####
+
+CellAnn_Avg_Mat <- function(data_mat,data_cluster,log='log',scale_factor=10000){
+	######
+	tag_cluster = unname(data_cluster)
+	tag_cluster_level = levels(as.factor(tag_cluster))
+	###### normalized back datasets ######
+	if(log == 'log'){
+		data_mat_exp = exp(data_mat)
+		data_mat_exp = data_mat_exp-1
+	}
+	if(log == 'log2'){
+		data_mat_exp = 2^(data_mat)
+		data_mat_exp = data_mat_exp-1
+	}
+	print(paste('Sums:',head(colSums(data_mat_exp[,c(1:2)]))))
+	###### data_mat_exp is 1e5 normalize #######
+	merge_mat = c()
+	for(i in 1:length(tag_cluster_level)){
+		index = which(data_cluster %in% tag_cluster_level[i] == T)
+		index_mat = data_mat_exp[,index]
+		######
+		index_sum = rowSums(index_mat)
+		######
+		merge_mat = c(merge_mat,index_sum)
+	}
+	###
+	merge_mat = matrix(merge_mat,nrow=dim(data_mat)[1])
+	###
+	rownames(merge_mat) = rownames(data_mat)
+	colnames(merge_mat) = tag_cluster_level
+	### colSums(merge_mat)
+	scale = colSums(merge_mat)/scale_factor
+	merge_mat = sweep(merge_mat,2,scale,FUN='/')
+	### default norm ####
+	merge_mat = round(log(merge_mat+1),3)
+	return(merge_mat)
+	### return is a log transformed matrix ####
+}
+
+##############
+############## this function subset each celltype annotation ######
+############## keys = "celltype"
+############## 变成 subset seurat ##################################
+############## 
+
+subset_each_ct <- function(data,resolution){
+	#####
+	matrix_list = list()
+	##### ct ######
+	ct = levels(as.factor(data$celltype))
+	#####
+	cells_list = list()
+	#####
+	for(j in 1:length(ct)){
+		print(ct[j])
+		#######
+		k = which(data$celltype == ct[j])
+		#######
+		if(length(k) > 1){
+			print('large')
+			#######
+			sub_seurat = subset(data,subset = celltype == ct[j])
+			#######
+			dim_length = dim(sub_seurat@reductions$dims@cell.embeddings)[2]
+			#######
+			sub_seurat = FindNeighbors(sub_seurat,reduction="dims",dims=c(1:dim_length))
+			sub_seurat = FindClusters(sub_seurat,resolution=resolution)
+			sub_seurat_mat = sub_seurat[['RNA']]@data
+			data_cluster = sub_seurat$seurat_clusters
+			data_cluster = paste(ct[j],data_cluster,sep='@sub')
+			sub_seurat_avg = CellAnn_Avg_Mat(data_mat=sub_seurat_mat,data_cluster)
+			matrix_list = c(matrix_list,list(sub_seurat_avg))
+			######
+			cells_table = data.frame(cells=colnames(sub_seurat_mat),new_sub_cluster = data_cluster)
+			cells_list = c(cells_list,list(cells_table))
+		}
+	}
+	matrix_list = do.call('cbind',matrix_list)
+	cells_list = do.call('rbind',cells_list)
+	####
+	return(list(matrix_list,cells_list))
+}
+
+
+######
+######
+
+Prepare_Seurat_file_in_the_folder_UCSC_STEP2 <- function(input_folder){
+	#########
+	library(Seurat)
+	##### we first go into the folder ######
+	setwd(input_folder)
+	##### 'Seurat_files_exists:' #####
+	files = list.files()
+	#####
+	##### searching seurat files ########
+	##### 
+	k = grep("_seurat_obj_new$",files)
+	#####
+	#########
+	seurat_file = files[k]
+	seurat_obj <- readRDS(seurat_file)
+	######### Performing log-normalization ###########
+	##### first we convert matrix to counts ##########
+	seurat_obj <- NormalizeData(seurat_obj)
+	#####
+	#####
+	subset_matrix_res = subset_each_ct(seurat_obj,resolution=0.5)
+	##### OK! what is the next ? #####################
+	#####
+	subset_matrix = subset_matrix_res[[1]]
+	subset_cell = subset_matrix_res[[2]]
+	#####
+	m = match(colnames(seurat_obj),subset_cell$cells)
+	seurat_obj$cell_id = subset_cell$cells[m]
+	seurat_obj$celltype_sub = subset_cell$new_sub_cluster[m]
+	#####
+	##### OK!!! we finished annotation these cells, next to check to see the results: #########
+	#####
+	png_file = paste0("sub_ct_check.png")
+	png(png_file,height=5000,width=26000,res=72*12)
+	print(DimPlot(seurat_obj, reduction = "dims",group.by=c('celltype_sub'),label = FALSE,raster = FALSE))
+	dev.off()
+	###### OK!! Next we will see the results !!! ############
+	###### first we generate the avg expression matrix !!! ##
+	######
+	celltype_avg = CellAnn_Avg_Mat(seurat_obj[['RNA']]@data,seurat_obj$celltype)
+	sub_celltype_avg = CellAnn_Avg_Mat(seurat_obj[['RNA']]@data,seurat_obj$celltype_sub)
+	###### then we will call markers ########################
+	######
+	celltype_marker = runDEGs_Ref(seurat_obj,method='COSG',idents='celltype',num_of_genes=100)
+	sub_celltype_marker = runDEGs_Ref(seurat_obj,method='COSG',idents='celltype_sub',num_of_genes=100)
+	###### then we will save these files ####################
+	######
+	saveRDS(seurat_obj,file=files[k])
+	######
+	saveRDS(celltype_avg,file=paste0(files[k],"_avg_mat"))
+	saveRDS(sub_celltype_avg,file=paste0(files[k],"_avg_sub_mat"))
+	saveRDS(celltype_marker,file=paste0(files[k],"_marker"))
+	saveRDS(sub_celltype_marker,file=paste0(files[k],"_sub_marker"))
+	######
+	###### also need to provide dimplot file !! #######
+	###### 
+	dim_files = data.frame(seurat_obj@reductions$dims@cell.embeddings)
+	dim_files_width = dim(dim_files)[2]
+	colnames(dim_files) <- paste0("dim",1:dim_files_width)
+	######
+	dim_files$cluster = seurat_obj$celltype
+	###### re-order dim files #######
+	dim_files = dim_files[,c(dim_files_width+1,1:dim_files_width)]
+	print(head(dim_files))
+	saveRDS(dim_files,file=paste0(files[k],"_Dimplot"))
+	######
+	print("Finished !!!")
+}
+
+########## should convert to “pmid” + PMID number + “_Dimplot” tags ######
+##########
+
+Prepare_Seurat_file_in_the_folder_UCSC_STEP2_copy_folder <- function(From_folder,To_folder,TAG){
+	############# we need to search files in the From_folder ##########
+	setwd(From_folder)
+	#############
+	files = list.files()
+	#############
+	### first: "_avg_mat" ##
+	k1 = grep("_avg_mat$",files)
+	k2 = grep("_avg_sub_mat$",files)
+	k3 = grep("_Dimplot$",files)
+	k4 = grep("new_marker$",files)
+	k5 = grep("new_sub_marker$",files)
+	#############
+	file_avg_mat_target = paste0('pmid',TAG,'_avg_mat')
+	file_avg_sub_mat_target = paste0('pmid',TAG,'_avg_sub_mat')
+	file_Dimplot_target = paste0('pmid',TAG,'_Dimplot')
+	file_marker_target = paste0('pmid',TAG,'_marker')
+	file_sub_marker_target = paste0('pmid',TAG,'_sub_marker')
+	#############
+	file_avg_mat_target2 = paste0(To_folder,file_avg_mat_target)
+	file_avg_sub_mat_target2 = paste0(To_folder,file_avg_sub_mat_target)
+	file_Dimplot_target2 = paste0(To_folder,file_Dimplot_target)
+	file_marker_target2 = paste0(To_folder,file_marker_target)
+	file_sub_marker_target2 = paste0(To_folder,file_sub_marker_target)
+	############# we use a command to copy these files ####################
+	#############
+	command1 = paste('cp',files[k1],file_avg_mat_target2)
+	command2 = paste('cp',files[k2],file_avg_sub_mat_target2)
+	command3 = paste('cp',files[k3],file_Dimplot_target2)
+	command4 = paste('cp',files[k4],file_marker_target2)
+	command5 = paste('cp',files[k5],file_sub_marker_target2)
+	print(command1)
+	print(command2)
+	print(command3)
+	print(command4)
+	print(command5)
+	#############
+	system(command1)
+	system(command2)
+	system(command3)
+	system(command4)
+	system(command5)
+	##############
+	Datasheet_table = data.frame(PMID=TAG,reference_index=paste0('pmid',TAG),reference_avg_mat=file_avg_mat_target,reference_avg_sub_mat=file_avg_sub_mat_target,reference_marker=file_marker_target,reference_sub_marker=file_sub_marker_target)
+	##############
+	setwd(To_folder)
+	files = list.files()
+	##############
+	k6 = grep("reference_table2_add.txt",files)
+	##############
+	if(length(k6) == 0){
+		##### then we write it as a new table ############
+		write.table(Datasheet_table,file="reference_table2_add.txt",sep="\t",row.names=F,quote=F)
+	}
+	if(length(k6) > 0){
+		print("Find!!!")
+		##### then we write it as a new table ############
+		Datasheet_table_Ori = read.table(files[k6],sep="\t",header=T)
+		#####
+		Datasheet_table = rbind(Datasheet_table_Ori,Datasheet_table)
+		#####
+		Datasheet_table = Datasheet_table[!duplicated(Datasheet_table$PMID),]
+		#####
+		write.table(Datasheet_table,file="reference_table2_add.txt",sep="\t",row.names=F,quote=F)
+	}
+}
+
+
+###########
+###########
+########### OK!!! we need to first provide the additional tables for table2 and total tables ###########
+###########
+###########
+
+we will create a new folder 
+
+cd /zp1/data/plyu3
+
+mkdir /zp1/data/plyu3/CellAnn_batch1
+
+###########
+########### OK!!! let us to start !!!! #######
+###########
+########### Open the table in the cellAnn db ################
+###########
+27062923_Human_preimplant_embryos
+Single-Cell RNA-Seq Reveals Lineage and X Chromosome Dynamics in Human Preimplantation Embryos
+
+pmid27062923_Human preimplant embryos
+
+Read_Seurat_file_in_the_folder_UCSC("/zp1/data/plyu3/UCSC/pmid27062923_Human preimplant embryos")
+
+########### Not used !!! ########
+########### red #################
+###########
+
+pmid27667365_Human pancreas
+
+folder = "/zp1/data/plyu3/UCSC/pmid27667365_Human pancreas"
+to = "/zp1/data/plyu3/CellAnn_batch1/"
+TAG = "27667365_Human_pancreas"
+Read_Seurat_file_in_the_folder_UCSC(folder)
+Prepare_Seurat_file_in_the_folder_UCSC(folder,norm="log")
+Prepare_Seurat_file_in_the_folder_UCSC_STEP2(folder)
+Prepare_Seurat_file_in_the_folder_UCSC_STEP2_copy_folder(folder,to,TAG)
+
+###########
+########### Next another study !!! ######
+folder = "/zp1/data/plyu3/UCSC/pmid28279351_H1 human embryonic stem cells"
+to = "/zp1/data/plyu3/CellAnn_batch1/"
+TAG = "28279351_H1"
+Read_Seurat_file_in_the_folder_UCSC(folder)
+Prepare_Seurat_file_in_the_folder_UCSC(folder,norm="counts")
+Prepare_Seurat_file_in_the_folder_UCSC_STEP2(folder)
+Prepare_Seurat_file_in_the_folder_UCSC_STEP2_copy_folder(folder,to,TAG)
+
+########### Next !!! #############
+folder = "/zp1/data/plyu3/UCSC/pmid28846088_Human brain"
+TAG = "28846088_Human_brain"
+Read_Seurat_file_in_the_folder_UCSC(folder)
+Prepare_Seurat_file_in_the_folder_UCSC(folder,norm="log")
+Prepare_Seurat_file_in_the_folder_UCSC_STEP2(folder)
+Prepare_Seurat_file_in_the_folder_UCSC_STEP2_copy_folder(folder,to,TAG)
+
+
+folder = "/zp1/data/plyu3/UCSC/pmid29091775_Human Glioblastoma"
+TAG = "28846088_Human_Glioblastoma"
+Read_Seurat_file_in_the_folder_UCSC(folder)
+Prepare_Seurat_file_in_the_folder_UCSC(folder,norm="log")
+Prepare_Seurat_file_in_the_folder_UCSC_STEP2(folder)
+Prepare_Seurat_file_in_the_folder_UCSC_STEP2_copy_folder(folder,to,TAG)
+
+
+
+
+########### Next !!!! #############
+########### OK!!!! let do it another 5 samples !!!!! #######
+
+
+folder = "/zp1/data/plyu3/UCSC/pmid29980650_Kidney Inflammatory Response"
+TAG = "29980650_Kidney"
+Read_Seurat_file_in_the_folder_UCSC(folder)
+Prepare_Seurat_file_in_the_folder_UCSC(folder,norm="counts")
+Prepare_Seurat_file_in_the_folder_UCSC_STEP2(folder)
+Prepare_Seurat_file_in_the_folder_UCSC_STEP2_copy_folder(folder,to,TAG)
+
+
+########## 
+folder = "/zp1/data/plyu3/UCSC/pmid30726734_Neonatal and Adult Human Testis"
+TAG = "30726734_Neonatal_Testis"
+
+Read_Seurat_file_in_the_folder_UCSC(folder)
+Prepare_Seurat_file_in_the_folder_UCSC(folder,norm="counts")
+Prepare_Seurat_file_in_the_folder_UCSC_STEP2(folder)
+Prepare_Seurat_file_in_the_folder_UCSC_STEP2_copy_folder(folder,to,TAG)
+
+###########
+
+folder = "/zp1/data/plyu3/UCSC/pmid31097668_Autism patients cortex"
+TAG = "31097668_cortex"
+
+Read_Seurat_file_in_the_folder_UCSC(folder)
+Prepare_Seurat_file_in_the_folder_UCSC(folder,norm="log2")
+Prepare_Seurat_file_in_the_folder_UCSC_STEP2(folder)
+Prepare_Seurat_file_in_the_folder_UCSC_STEP2_copy_folder(folder,to,TAG)
+
+###########
+folder = "/zp1/data/plyu3/UCSC/pmid31348891_Human Colon during Ulcerative Colitis/Epithelium"
+TAG = "331348891_Human_Colon_Epithelium"
+
+Read_Seurat_file_in_the_folder_UCSC(folder)
+Prepare_Seurat_file_in_the_folder_UCSC(folder,norm="counts")
+Prepare_Seurat_file_in_the_folder_UCSC_STEP2(folder)
+Prepare_Seurat_file_in_the_folder_UCSC_STEP2_copy_folder(folder,to,TAG)
+
+
+
+folder = "/zp1/data/plyu3/UCSC/pmid31348891_Human Colon during Ulcerative Colitis/Fibroblasts"
+TAG = "331348891_Human_Colon_Fibroblasts"
+Read_Seurat_file_in_the_folder_UCSC(folder)
+Prepare_Seurat_file_in_the_folder_UCSC(folder,norm="counts")
+Prepare_Seurat_file_in_the_folder_UCSC_STEP2(folder)
+Prepare_Seurat_file_in_the_folder_UCSC_STEP2_copy_folder(folder,to,TAG)
+
+
+
+folder = "/zp1/data/plyu3/UCSC/pmid31348891_Human Colon during Ulcerative Colitis/Immune"
+TAG = "331348891_Human_Colon_Immune"
+Read_Seurat_file_in_the_folder_UCSC(folder)
+Prepare_Seurat_file_in_the_folder_UCSC(folder,norm="counts")
+Prepare_Seurat_file_in_the_folder_UCSC_STEP2(folder)
+Prepare_Seurat_file_in_the_folder_UCSC_STEP2_copy_folder(folder,to,TAG)
+
+
+####### OK!!! Next paper !!! ######
+#######
+
+
+folder = "/zp1/data/plyu3/UCSC/pmid31511693_Human hPSCs"
+TAG = "31511693_Human_hPSCs"
+Read_Seurat_file_in_the_folder_UCSC(folder)
+Prepare_Seurat_file_in_the_folder_UCSC(folder,norm="log")
+Prepare_Seurat_file_in_the_folder_UCSC_STEP2(folder)
+Prepare_Seurat_file_in_the_folder_UCSC_STEP2_copy_folder(folder,to,TAG)
+
+
+#######
+folder = "/zp1/data/plyu3/UCSC/pmid31554641_Proliferating Glioblastoma Cells"
+TAG = "31554641_Human_Glioblastoma"
+Read_Seurat_file_in_the_folder_UCSC(folder)
+Prepare_Seurat_file_in_the_folder_UCSC(folder,norm="log")
+Prepare_Seurat_file_in_the_folder_UCSC_STEP2(folder)
+Prepare_Seurat_file_in_the_folder_UCSC_STEP2_copy_folder(folder,to,TAG)
+
+
+#######
+#######
+#######
+
+
+
+cd /zp1/data/plyu3
+
+mkdir /zp1/data/plyu3/CellAnn_batch2/
+
+to = "/zp1/data/plyu3/CellAnn_batch2/"
+
+#######
+#######
+
+folder = "/zp1/data/plyu3/UCSC/pmid31558434_COVID-19 Nasal sample"
+TAG = "31558434_COVID-19"
+Read_Seurat_file_in_the_folder_UCSC(folder)
+Prepare_Seurat_file_in_the_folder_UCSC(folder,norm="counts")
+Prepare_Seurat_file_in_the_folder_UCSC_STEP2(folder)
+Prepare_Seurat_file_in_the_folder_UCSC_STEP2_copy_folder(folder,to,TAG)
+
+
+########
+
+folder = "/zp1/data/plyu3/UCSC/pmid31597962_Human fetal liver haematopoiesis"
+TAG = "31597962_Human_fetal_liver"
+Read_Seurat_file_in_the_folder_UCSC(folder)
+Prepare_Seurat_file_in_the_folder_UCSC(folder,norm="log")
+Prepare_Seurat_file_in_the_folder_UCSC_STEP2(folder)
+Prepare_Seurat_file_in_the_folder_UCSC_STEP2_copy_folder(folder,to,TAG)
+
+
+#########
+folder = "/zp1/data/plyu3/UCSC/pmid31892341_ lung spleen esophagus after cold preservation/Lung"
+TAG = "31892341_lung"
+Read_Seurat_file_in_the_folder_UCSC(folder)
+Prepare_Seurat_file_in_the_folder_UCSC(folder,norm="counts")
+Prepare_Seurat_file_in_the_folder_UCSC_STEP2(folder)
+Prepare_Seurat_file_in_the_folder_UCSC_STEP2_copy_folder(folder,to,TAG)
+
+
+#########
+folder = "/zp1/data/plyu3/UCSC/pmid31892341_ lung spleen esophagus after cold preservation/Spleen"
+TAG = "31892341_Spleen"
+Read_Seurat_file_in_the_folder_UCSC(folder)
+Prepare_Seurat_file_in_the_folder_UCSC(folder,norm="log")
+Prepare_Seurat_file_in_the_folder_UCSC_STEP2(folder)
+Prepare_Seurat_file_in_the_folder_UCSC_STEP2_copy_folder(folder,to,TAG)
+
+
+#########
+
+folder = "/zp1/data/plyu3/UCSC/pmid31892341_ lung spleen esophagus after cold preservation/Esophagus"
+TAG = "31892341_Esophagus"
+Read_Seurat_file_in_the_folder_UCSC(folder)
+Prepare_Seurat_file_in_the_folder_UCSC(folder,norm="log")
+Prepare_Seurat_file_in_the_folder_UCSC_STEP2(folder)
+Prepare_Seurat_file_in_the_folder_UCSC_STEP2_copy_folder(folder,to,TAG)
+###########
+
+###
+folder = "/zp1/data/plyu3/UCSC/pmid31950241_Human Testis integrated dataset"
+TAG = "31950241_Human_Testis"
+Read_Seurat_file_in_the_folder_UCSC(folder)
+### Not work!!! #####
+
+
+folder = "/zp1/data/plyu3/UCSC/pmid31996853_Cortical organoids/Organoids"
+TAG = "31996853_Cortical_organoids"
+Read_Seurat_file_in_the_folder_UCSC(folder)
+Prepare_Seurat_file_in_the_folder_UCSC(folder,norm="log")
+Prepare_Seurat_file_in_the_folder_UCSC_STEP2(folder)
+Prepare_Seurat_file_in_the_folder_UCSC_STEP2_copy_folder(folder,to,TAG)
+
+
+folder = "/zp1/data/plyu3/UCSC/pmid31996853_Cortical organoids/Primary"
+TAG = "31996853_Cortical_primary"
+Read_Seurat_file_in_the_folder_UCSC(folder)
+Prepare_Seurat_file_in_the_folder_UCSC(folder,norm="log")
+Prepare_Seurat_file_in_the_folder_UCSC_STEP2(folder)
+Prepare_Seurat_file_in_the_folder_UCSC_STEP2_copy_folder(folder,to,TAG)
+
+#### 
+folder = "/zp1/data/plyu3/UCSC/pmid32049002_Human multiple organoids and fetal brain"
+TAG = "32049002_Human"
+Read_Seurat_file_in_the_folder_UCSC(folder)
+Prepare_Seurat_file_in_the_folder_UCSC(folder,norm="log")
+Prepare_Seurat_file_in_the_folder_UCSC_STEP2(folder)
+Prepare_Seurat_file_in_the_folder_UCSC_STEP2_copy_folder(folder,to,TAG)
+
+
+####
+folder = "/zp1/data/plyu3/UCSC/pmid32066951_Colon immune cells"
+TAG = "32066951_Colon"
+Read_Seurat_file_in_the_folder_UCSC(folder)
+Prepare_Seurat_file_in_the_folder_UCSC(folder,norm="log")
+Prepare_Seurat_file_in_the_folder_UCSC_STEP2(folder)
+Prepare_Seurat_file_in_the_folder_UCSC_STEP2_copy_folder(folder,to,TAG)
+
+####
+folder = "/zp1/data/plyu3/UCSC/pmid32079746_Fetal Thymus/Epithelial"
+TAG = "32079746_Fetal_Thymus_Epithelial"
+Read_Seurat_file_in_the_folder_UCSC(folder)
+Prepare_Seurat_file_in_the_folder_UCSC(folder,norm="log")
+Prepare_Seurat_file_in_the_folder_UCSC_STEP2(folder)
+Prepare_Seurat_file_in_the_folder_UCSC_STEP2_copy_folder(folder,to,TAG)
+
+
+
+folder = "/zp1/data/plyu3/UCSC/pmid32079746_Fetal Thymus/HSC"
+TAG = "32079746_Fetal_Thymus_HSC"
+Read_Seurat_file_in_the_folder_UCSC(folder)
+Prepare_Seurat_file_in_the_folder_UCSC(folder,norm="log")
+Prepare_Seurat_file_in_the_folder_UCSC_STEP2(folder)
+Prepare_Seurat_file_in_the_folder_UCSC_STEP2_copy_folder(folder,to,TAG)
+
+folder = "/zp1/data/plyu3/UCSC/pmid32079746_Fetal Thymus/MatureT"
+TAG = "32079746_Fetal_Thymus_MatureT"
+Read_Seurat_file_in_the_folder_UCSC(folder)
+Prepare_Seurat_file_in_the_folder_UCSC(folder,norm="log")
+Prepare_Seurat_file_in_the_folder_UCSC_STEP2(folder)
+Prepare_Seurat_file_in_the_folder_UCSC_STEP2_copy_folder(folder,to,TAG)
+
+
+
+folder = "/zp1/data/plyu3/UCSC/pmid32123174_Human Ovary"
+TAG = "32123174_Human_Ovary"
+Read_Seurat_file_in_the_folder_UCSC(folder)
+Prepare_Seurat_file_in_the_folder_UCSC(folder,norm="counts")
+Prepare_Seurat_file_in_the_folder_UCSC_STEP2(folder)
+Prepare_Seurat_file_in_the_folder_UCSC_STEP2_copy_folder(folder,to,TAG)
+
+#########
+######## Next #######
+##########
+### red ####
+### red #### something wrong !!! ######
+folder = "/zp1/data/plyu3/UCSC/pmid32214235_Human cell landscape"
+TAG = "32214235_Human_cell_landscape"
+Read_Seurat_file_in_the_folder_UCSC(folder)
+Prepare_Seurat_file_in_the_folder_UCSC(folder,norm="log2")
+Prepare_Seurat_file_in_the_folder_UCSC_STEP2(folder)
+Prepare_Seurat_file_in_the_folder_UCSC_STEP2_copy_folder(folder,to,TAG)
+
+#####
+folder = "/zp1/data/plyu3/UCSC/pmid32246845_Human lungs and HBECs in COVID-19 pathogenesis/Lung"
+TAG = "32246845_Human_Lung"
+Read_Seurat_file_in_the_folder_UCSC(folder)
+Prepare_Seurat_file_in_the_folder_UCSC(folder,norm="log")
+Prepare_Seurat_file_in_the_folder_UCSC_STEP2(folder)
+Prepare_Seurat_file_in_the_folder_UCSC_STEP2_copy_folder(folder,to,TAG)
+
+
+folder = "/zp1/data/plyu3/UCSC/pmid32246845_Human lungs and HBECs in COVID-19 pathogenesis/Airways"
+TAG = "32246845_Human_Airways"
+Read_Seurat_file_in_the_folder_UCSC(folder)
+Prepare_Seurat_file_in_the_folder_UCSC(folder,norm="log")
+Prepare_Seurat_file_in_the_folder_UCSC_STEP2(folder)
+Prepare_Seurat_file_in_the_folder_UCSC_STEP2_copy_folder(folder,to,TAG)
+
+
+
+
+########
+######## OK!!! Next is batch3 !!! ###########
+########
+
+
+cd /zp1/data/plyu3
+
+mkdir /zp1/data/plyu3/CellAnn_batch3/
+
+to = "/zp1/data/plyu3/CellAnn_batch3/"
+
+
+#######
+folder = "/zp1/data/plyu3/UCSC/pmid32398875_BALF immune cells in Covid19"
+TAG = "32398875_BALF"
+Read_Seurat_file_in_the_folder_UCSC(folder)
+Prepare_Seurat_file_in_the_folder_UCSC(folder,norm="counts")
+Prepare_Seurat_file_in_the_folder_UCSC_STEP2(folder)
+Prepare_Seurat_file_in_the_folder_UCSC_STEP2_copy_folder(folder,to,TAG)
+
+
+folder = "/zp1/data/plyu3/UCSC/pmid32427931_Smoking Effect on Human Airway Epithelium"
+TAG = "32427931_Smoking"
+Read_Seurat_file_in_the_folder_UCSC(folder)
+Prepare_Seurat_file_in_the_folder_UCSC(folder,norm="log")
+Prepare_Seurat_file_in_the_folder_UCSC_STEP2(folder)
+Prepare_Seurat_file_in_the_folder_UCSC_STEP2_copy_folder(folder,to,TAG)
+
+
+folder = "/zp1/data/plyu3/UCSC/pmid32499656_Human macrophage development"
+TAG = "32499656_Human_macrophage"
+Read_Seurat_file_in_the_folder_UCSC(folder)
+Prepare_Seurat_file_in_the_folder_UCSC(folder,norm="counts")
+Prepare_Seurat_file_in_the_folder_UCSC_STEP2(folder)
+Prepare_Seurat_file_in_the_folder_UCSC_STEP2_copy_folder(folder,to,TAG)
+
+folder = "/zp1/data/plyu3/UCSC/pmid32591762_COVID-19 airways"
+TAG = "32591762_COVID-19"
+Read_Seurat_file_in_the_folder_UCSC(folder)
+Prepare_Seurat_file_in_the_folder_UCSC(folder,norm="counts")
+Prepare_Seurat_file_in_the_folder_UCSC_STEP2(folder)
+Prepare_Seurat_file_in_the_folder_UCSC_STEP2_copy_folder(folder,to,TAG)
+
+
+folder = "/zp1/data/plyu3/UCSC/pmid32603604_Sputum cells from Cystic Fibrosis patients"
+TAG = "32603604_Sputum"
+Read_Seurat_file_in_the_folder_UCSC(folder)
+Prepare_Seurat_file_in_the_folder_UCSC(folder,norm="log")
+Prepare_Seurat_file_in_the_folder_UCSC_STEP2(folder)
+Prepare_Seurat_file_in_the_folder_UCSC_STEP2_copy_folder(folder,to,TAG)
+
+
+folder = "/zp1/data/plyu3/UCSC/pmid32726565_Human healthy airways"
+TAG = "32726565_Human_airways"
+Read_Seurat_file_in_the_folder_UCSC(folder)
+Prepare_Seurat_file_in_the_folder_UCSC(folder,norm="log")
+Prepare_Seurat_file_in_the_folder_UCSC_STEP2(folder)
+Prepare_Seurat_file_in_the_folder_UCSC_STEP2_copy_folder(folder,to,TAG)
+
+
+folder = "/zp1/data/plyu3/UCSC/pmid32764665_Covid19 cytokine storm"
+TAG = "32764665_Covid19"
+Read_Seurat_file_in_the_folder_UCSC(folder)
+Prepare_Seurat_file_in_the_folder_UCSC(folder,norm="log")
+Prepare_Seurat_file_in_the_folder_UCSC_STEP2(folder)
+Prepare_Seurat_file_in_the_folder_UCSC_STEP2_copy_folder(folder,to,TAG)
+
+
+folder = "/zp1/data/plyu3/UCSC/pmid32788748_COVID19 immune response"
+TAG = "32788748_COVID19"
+Read_Seurat_file_in_the_folder_UCSC(folder)
+Prepare_Seurat_file_in_the_folder_UCSC(folder,norm="log")
+Prepare_Seurat_file_in_the_folder_UCSC_STEP2(folder)
+Prepare_Seurat_file_in_the_folder_UCSC_STEP2_copy_folder(folder,to,TAG)
+
+
+
+
+folder = "/zp1/data/plyu3/UCSC/pmid32832598_Pulmonary fibrosis lungs"
+TAG = "32832598_Pulmonary"
+Read_Seurat_file_in_the_folder_UCSC(folder)
+Prepare_Seurat_file_in_the_folder_UCSC(folder,norm="log")
+Prepare_Seurat_file_in_the_folder_UCSC_STEP2(folder)
+Prepare_Seurat_file_in_the_folder_UCSC_STEP2_copy_folder(folder,to,TAG)
+
+
+#### red ###### next round !!!! ########
+####
+####
+
+folder = "/zp1/data/plyu3/UCSC/pmid32929266_endometrium cycle"
+TAG = "32929266_endometrium"
+Read_Seurat_file_in_the_folder_UCSC(folder)
+Prepare_Seurat_file_in_the_folder_UCSC(folder,norm="counts")
+Prepare_Seurat_file_in_the_folder_UCSC_STEP2(folder)
+Prepare_Seurat_file_in_the_folder_UCSC_STEP2_copy_folder(folder,to,TAG)
+
+#####
+
+
+
+folder = "/zp1/data/plyu3/UCSC/pmid32946807_Human digestive tract"
+TAG = "32946807_Human_digestive_tract"
+Read_Seurat_file_in_the_folder_UCSC(folder)
+Prepare_Seurat_file_in_the_folder_UCSC(folder,norm="log")
+Prepare_Seurat_file_in_the_folder_UCSC_STEP2(folder)
+Prepare_Seurat_file_in_the_folder_UCSC_STEP2_copy_folder(folder,to,TAG)
+
+
+######
+
+folder = "/zp1/data/plyu3/UCSC/pmid32968047_Human teeth"
+TAG = "32968047_Human_teeth"
+Read_Seurat_file_in_the_folder_UCSC(folder)
+Prepare_Seurat_file_in_the_folder_UCSC(folder,norm="counts")
+Prepare_Seurat_file_in_the_folder_UCSC_STEP2(folder)
+Prepare_Seurat_file_in_the_folder_UCSC_STEP2_copy_folder(folder,to,TAG)
+
+
+
+
+folder = "/zp1/data/plyu3/UCSC/pmid32971526_Adult human heart"
+TAG = "32971526_human_heart"
+Read_Seurat_file_in_the_folder_UCSC(folder)
+Prepare_Seurat_file_in_the_folder_UCSC(folder,norm="counts")
+Prepare_Seurat_file_in_the_folder_UCSC_STEP2(folder)
+Prepare_Seurat_file_in_the_folder_UCSC_STEP2_copy_folder(folder,to,TAG)
+
+
+
+folder = "/zp1/data/plyu3/UCSC/pmid33140061_Oral cavity in COVID-19"
+TAG = "33140061_Oral_cavity"
+Read_Seurat_file_in_the_folder_UCSC(folder)
+Prepare_Seurat_file_in_the_folder_UCSC(folder,norm="log")
+Prepare_Seurat_file_in_the_folder_UCSC_STEP2(folder)
+Prepare_Seurat_file_in_the_folder_UCSC_STEP2_copy_folder(folder,to,TAG)
+
+
+#####
+##### some thing wrong !!!!!! ##################
+#####
+
+##### "red" #######
+#####
+
+folder = "/zp1/data/plyu3/UCSC/pmid33184181_Human fetal cell atlas"
+TAG = "33184181_Human_fetal"
+Read_Seurat_file_in_the_folder_UCSC(folder)
+Prepare_Seurat_file_in_the_folder_UCSC(folder,norm="counts")
+Prepare_Seurat_file_in_the_folder_UCSC_STEP2(folder)
+Prepare_Seurat_file_in_the_folder_UCSC_STEP2_copy_folder(folder,to,TAG)
+
+
+folder = "/zp1/data/plyu3/UCSC/pmid33208946_Human Lung"
+TAG = "33184181_Human_Lung"
+Read_Seurat_file_in_the_folder_UCSC(folder)
+Prepare_Seurat_file_in_the_folder_UCSC(folder,norm="log")
+Prepare_Seurat_file_in_the_folder_UCSC_STEP2(folder)
+Prepare_Seurat_file_in_the_folder_UCSC_STEP2_copy_folder(folder,to,TAG)
+
+
+folder = "/zp1/data/plyu3/UCSC/pmid33259798_Human airway basal stem cells"
+TAG = "33259798_Human_airway_basal "
+Read_Seurat_file_in_the_folder_UCSC(folder)
+Prepare_Seurat_file_in_the_folder_UCSC(folder,norm="log")
+Prepare_Seurat_file_in_the_folder_UCSC_STEP2(folder)
+Prepare_Seurat_file_in_the_folder_UCSC_STEP2_copy_folder(folder,to,TAG)
+
+############# ##############
+############# ##############
+############# Next !!!! #####
+############# ##############
+############# ##############
+#############
+
+
+folder = "/zp1/data/plyu3/UCSC/pmid33290721_Developing human gut/Fetal"
+TAG = "33290721_Developing_human_gut_Fetal"
+Read_Seurat_file_in_the_folder_UCSC(folder)
+Prepare_Seurat_file_in_the_folder_UCSC(folder,norm="counts")
+Prepare_Seurat_file_in_the_folder_UCSC_STEP2(folder)
+Prepare_Seurat_file_in_the_folder_UCSC_STEP2_copy_folder(folder,to,TAG)
+
+
+
+
+folder = "/zp1/data/plyu3/UCSC/pmid33290721_Developing human gut/Pediatric"
+TAG = "33290721_Developing_human_gut_Pediatric"
+Read_Seurat_file_in_the_folder_UCSC(folder)
+Prepare_Seurat_file_in_the_folder_UCSC(folder,norm="counts")
+Prepare_Seurat_file_in_the_folder_UCSC_STEP2(folder)
+Prepare_Seurat_file_in_the_folder_UCSC_STEP2_copy_folder(folder,to,TAG)
+
+
+
+
+
+folder = "/zp1/data/plyu3/UCSC/pmid33361824_Nasal samples from COVID-19 patients with hypertension"
+TAG = "33361824_Nasal"
+Read_Seurat_file_in_the_folder_UCSC(folder)
+Prepare_Seurat_file_in_the_folder_UCSC(folder,norm="counts")
+Prepare_Seurat_file_in_the_folder_UCSC_STEP2(folder)
+Prepare_Seurat_file_in_the_folder_UCSC_STEP2_copy_folder(folder,to,TAG)
+
+
+
+folder = "/zp1/data/plyu3/UCSC/pmid33479125_Healthy Human Skin"
+TAG = "33479125_Human_Skin"
+Read_Seurat_file_in_the_folder_UCSC(folder)
+Prepare_Seurat_file_in_the_folder_UCSC(folder,norm="counts")
+Prepare_Seurat_file_in_the_folder_UCSC_STEP2(folder)
+Prepare_Seurat_file_in_the_folder_UCSC_STEP2_copy_folder(folder,to,TAG)
+
+
+
+
+folder = "/zp1/data/plyu3/UCSC/pmid33713619_Immune cells in Severe Covid19/Adaptive"
+TAG = "33713619_Immune_Adaptive"
+Read_Seurat_file_in_the_folder_UCSC(folder)
+Prepare_Seurat_file_in_the_folder_UCSC(folder,norm="log")
+Prepare_Seurat_file_in_the_folder_UCSC_STEP2(folder)
+Prepare_Seurat_file_in_the_folder_UCSC_STEP2_copy_folder(folder,to,TAG)
+
+
+
+
+folder = "/zp1/data/plyu3/UCSC/pmid33713619_Immune cells in Severe Covid19/Innate"
+TAG = "33713619_Immune_Innate"
+Read_Seurat_file_in_the_folder_UCSC(folder)
+Prepare_Seurat_file_in_the_folder_UCSC(folder,norm="log")
+Prepare_Seurat_file_in_the_folder_UCSC_STEP2(folder)
+Prepare_Seurat_file_in_the_folder_UCSC_STEP2_copy_folder(folder,to,TAG)
+
+
+folder = "/zp1/data/plyu3/UCSC/pmid33758880_Pediatric COVID PBMC and Nasal/PBMC"
+TAG = "33758880_Pediatric_PBMC"
+Read_Seurat_file_in_the_folder_UCSC(folder)
+Prepare_Seurat_file_in_the_folder_UCSC(folder,norm="log")
+Prepare_Seurat_file_in_the_folder_UCSC_STEP2(folder)
+Prepare_Seurat_file_in_the_folder_UCSC_STEP2_copy_folder(folder,to,TAG)
+
+
+
+
+folder = "/zp1/data/plyu3/UCSC/pmid33758880_Pediatric COVID PBMC and Nasal/Nasal"
+TAG = "33758880_Pediatric_Nasal"
+Read_Seurat_file_in_the_folder_UCSC(folder)
+Prepare_Seurat_file_in_the_folder_UCSC(folder,norm="log")
+Prepare_Seurat_file_in_the_folder_UCSC_STEP2(folder)
+Prepare_Seurat_file_in_the_folder_UCSC_STEP2_copy_folder(folder,to,TAG)
+
+
+################# here !!!! yellow ########
+###### Next !!!!! ######## yellow  ########
+################# ######## yellow #########
+
+
+folder = "/zp1/data/plyu3/UCSC/pmid33865984_Human cornea"
+TAG = "33865984_Human_cornea"
+Read_Seurat_file_in_the_folder_UCSC(folder)
+Prepare_Seurat_file_in_the_folder_UCSC(folder,norm="log")
+Prepare_Seurat_file_in_the_folder_UCSC_STEP2(folder)
+Prepare_Seurat_file_in_the_folder_UCSC_STEP2_copy_folder(folder,to,TAG)
+
+#### red ########################
+#### red ########################
+#### something wrong !!!!! ######
+#### red ########################
+#### red ########################
+
+folder = "/zp1/data/plyu3/UCSC/pmid33879890_Covid19 PBMC"
+TAG = "33879890_Covid19_PBMC"
+Read_Seurat_file_in_the_folder_UCSC(folder)
+Prepare_Seurat_file_in_the_folder_UCSC(folder,norm="log")
+Prepare_Seurat_file_in_the_folder_UCSC_STEP2(folder)
+Prepare_Seurat_file_in_the_folder_UCSC_STEP2_copy_folder(folder,to,TAG)
+
+####
+#### upper here something wrong !!! ####
+####
+
+
+folder = "/zp1/data/plyu3/UCSC/pmid33958799_Airway Epithelium in CF Patients"
+TAG = "33958799_Airway_Epithelium"
+Read_Seurat_file_in_the_folder_UCSC(folder)
+Prepare_Seurat_file_in_the_folder_UCSC(folder,norm="log")
+Prepare_Seurat_file_in_the_folder_UCSC_STEP2(folder)
+Prepare_Seurat_file_in_the_folder_UCSC_STEP2_copy_folder(folder,to,TAG)
+
+
+folder = "/zp1/data/plyu3/UCSC/pmid34035279_Human fetal pancreas and spheroids/Fetal"
+TAG = "34035279_Human_fetal_pancreas_Fetal"
+Read_Seurat_file_in_the_folder_UCSC(folder)
+Prepare_Seurat_file_in_the_folder_UCSC(folder,norm="log")
+Prepare_Seurat_file_in_the_folder_UCSC_STEP2(folder)
+Prepare_Seurat_file_in_the_folder_UCSC_STEP2_copy_folder(folder,to,TAG)
+
+
+
+folder = "/zp1/data/plyu3/UCSC/pmid34035279_Human fetal pancreas and spheroids/Combined"
+TAG = "34035279_Human_fetal_pancreas_Combined"
+Read_Seurat_file_in_the_folder_UCSC(folder)
+Prepare_Seurat_file_in_the_folder_UCSC(folder,norm="log")
+Prepare_Seurat_file_in_the_folder_UCSC_STEP2(folder)
+Prepare_Seurat_file_in_the_folder_UCSC_STEP2_copy_folder(folder,to,TAG)
+
+
+
+folder = "/zp1/data/plyu3/UCSC/pmid34035279_Human fetal pancreas and spheroids/PP-spheroids"
+TAG = "34035279_Human_fetal_pancreas_PP_spheroids"
+Read_Seurat_file_in_the_folder_UCSC(folder)
+Prepare_Seurat_file_in_the_folder_UCSC(folder,norm="log")
+Prepare_Seurat_file_in_the_folder_UCSC_STEP2(folder)
+Prepare_Seurat_file_in_the_folder_UCSC_STEP2_copy_folder(folder,to,TAG)
+
+
+
+folder = "/zp1/data/plyu3/UCSC/pmid34051145_Human Hippocampal Axis"
+TAG = "34051145_Human_Hippocampal"
+Read_Seurat_file_in_the_folder_UCSC(folder)
+Prepare_Seurat_file_in_the_folder_UCSC(folder,norm="log")
+Prepare_Seurat_file_in_the_folder_UCSC_STEP2(folder)
+Prepare_Seurat_file_in_the_folder_UCSC_STEP2_copy_folder(folder,to,TAG)
+
+
+
+folder  = "/zp1/data/plyu3/UCSC/pmid34062119_multimodal PBMC"
+TAG = "34062119_multimodal_PBMC"
+Read_Seurat_file_in_the_folder_UCSC(folder)
+Prepare_Seurat_file_in_the_folder_UCSC(folder,norm="log")
+Prepare_Seurat_file_in_the_folder_UCSC_STEP2(folder)
+Prepare_Seurat_file_in_the_folder_UCSC_STEP2_copy_folder(folder,to,TAG)
+
+
+
+
+folder = "/zp1/data/plyu3/UCSC/pmid34354210_Uninfected nasal mucosa across the lifespan"
+TAG = "34354210_Uninfected_nasal"
+Read_Seurat_file_in_the_folder_UCSC(folder)
+Prepare_Seurat_file_in_the_folder_UCSC(folder,norm="log")
+Prepare_Seurat_file_in_the_folder_UCSC_STEP2(folder)
+Prepare_Seurat_file_in_the_folder_UCSC_STEP2_copy_folder(folder,to,TAG)
+
+
+
+#### red ########################
+#### red ########################
+#### something wrong !!!!! ######
+#### red ########################
+#### red ########################
+
+folder = "/zp1/data/plyu3/UCSC/pmid34497389_Healthy human gut"
+TAG = "34497389_Healthy_human_gut"
+Read_Seurat_file_in_the_folder_UCSC(folder)
+Prepare_Seurat_file_in_the_folder_UCSC(folder,norm="log")
+Prepare_Seurat_file_in_the_folder_UCSC_STEP2(folder)
+Prepare_Seurat_file_in_the_folder_UCSC_STEP2_copy_folder(folder,to,TAG)
+
+####
+#### upper here something wrong !!! ####
+####
+
+
+
+folder = "/zp1/data/plyu3/UCSC/pmid35232959_Human fetal liver HSC"
+TAG = "35232959_Human_fetal_liver"
+Read_Seurat_file_in_the_folder_UCSC(folder)
+Prepare_Seurat_file_in_the_folder_UCSC(folder,norm="log")
+Prepare_Seurat_file_in_the_folder_UCSC_STEP2(folder)
+Prepare_Seurat_file_in_the_folder_UCSC_STEP2_copy_folder(folder,to,TAG)
+
+
+folder = "/zp1/data/plyu3/UCSC/pmid35438006_Human bronchial epithelial cells/Submerged"
+TAG = "35438006_Human_bronchial_Submerged"
+Read_Seurat_file_in_the_folder_UCSC(folder)
+Prepare_Seurat_file_in_the_folder_UCSC(folder,norm="log")
+Prepare_Seurat_file_in_the_folder_UCSC_STEP2(folder)
+Prepare_Seurat_file_in_the_folder_UCSC_STEP2_copy_folder(folder,to,TAG)
+
+
+folder = "/zp1/data/plyu3/UCSC/pmid35438006_Human bronchial epithelial cells/ALI"
+TAG = "35438006_Human_bronchial_ALI"
+Read_Seurat_file_in_the_folder_UCSC(folder)
+Prepare_Seurat_file_in_the_folder_UCSC(folder,norm="log")
+Prepare_Seurat_file_in_the_folder_UCSC_STEP2(folder)
+Prepare_Seurat_file_in_the_folder_UCSC_STEP2_copy_folder(folder,to,TAG)
+
+
+folder = "/zp1/data/plyu3/UCSC/pmid35523173_Human Forebrain Development"
+TAG = "35523173_Human_Forebrain"
+Read_Seurat_file_in_the_folder_UCSC(folder)
+Prepare_Seurat_file_in_the_folder_UCSC(folder,norm="log")
+Prepare_Seurat_file_in_the_folder_UCSC_STEP2(folder)
+Prepare_Seurat_file_in_the_folder_UCSC_STEP2_copy_folder(folder,to,TAG)
+
+
+######
+###### OK!!! we copy these files from batch3 ########
+######
+###### pink ######
+###### pink ######
+###### pink ######
+###### pink ######
+###### pink ######
+###### pink ######
+###### pink ######
+source("/zp1/data/plyu3/UCSC/Prepare_CellAnn_DB_final_source.R")
+
+
+we will create a new folder 
+
+cd /zp1/data/plyu3
+
+mkdir /zp1/data/plyu3/CellAnn_batch4
+
+to = "/zp1/data/plyu3/CellAnn_batch4/"
+
+
+#### Not work!!! #####
+folder = "/zp1/data/plyu3/UCSC/pmid35549310_Developing human immune system"
+TAG = "35549310_Developing_human_immune"
+Read_Seurat_file_in_the_folder_UCSC(folder)
+Prepare_Seurat_file_in_the_folder_UCSC(folder,norm="log")
+Prepare_Seurat_file_in_the_folder_UCSC_STEP2(folder)
+Prepare_Seurat_file_in_the_folder_UCSC_STEP2_copy_folder(folder,to,TAG)
+
+
+####
+
+folder = "/zp1/data/plyu3/UCSC/pmid35549406_Pan-immune/B-cell"
+TAG = "35549406_B_cell"
+Read_Seurat_file_in_the_folder_UCSC(folder)
+Prepare_Seurat_file_in_the_folder_UCSC(folder,norm="log")
+Prepare_Seurat_file_in_the_folder_UCSC_STEP2(folder)
+Prepare_Seurat_file_in_the_folder_UCSC_STEP2_copy_folder(folder,to,TAG)
+
+
+
+folder = "/zp1/data/plyu3/UCSC/pmid35549406_Pan-immune/Global"
+TAG = "35549406_Pan_Global"
+Read_Seurat_file_in_the_folder_UCSC(folder)
+Prepare_Seurat_file_in_the_folder_UCSC(folder,norm="log")
+Prepare_Seurat_file_in_the_folder_UCSC_STEP2(folder)
+Prepare_Seurat_file_in_the_folder_UCSC_STEP2_copy_folder(folder,to,TAG)
+
+
+
+folder = "/zp1/data/plyu3/UCSC/pmid35549406_Pan-immune/Myeloid"
+TAG = "35549406_Myeloid"
+Read_Seurat_file_in_the_folder_UCSC(folder)
+Prepare_Seurat_file_in_the_folder_UCSC(folder,norm="log")
+Prepare_Seurat_file_in_the_folder_UCSC_STEP2(folder)
+Prepare_Seurat_file_in_the_folder_UCSC_STEP2_copy_folder(folder,to,TAG)
+
+
+folder = "/zp1/data/plyu3/UCSC/pmid35549406_Pan-immune/T-cell"
+TAG = "35549406_T_cell"
+Read_Seurat_file_in_the_folder_UCSC(folder)
+Prepare_Seurat_file_in_the_folder_UCSC(folder,norm="log")
+Prepare_Seurat_file_in_the_folder_UCSC_STEP2(folder)
+Prepare_Seurat_file_in_the_folder_UCSC_STEP2_copy_folder(folder,to,TAG)
+
+#####
+
+folder = "/zp1/data/plyu3/UCSC/pmid35820705_Alveolar Macrophage"
+TAG = "35820705_Alveolar_Macrophage"
+Read_Seurat_file_in_the_folder_UCSC(folder)
+Prepare_Seurat_file_in_the_folder_UCSC(folder,norm="log")
+Prepare_Seurat_file_in_the_folder_UCSC_STEP2(folder)
+Prepare_Seurat_file_in_the_folder_UCSC_STEP2_copy_folder(folder,to,TAG)
+
+
+folder = "/zp1/data/plyu3/UCSC/26430063_scRNA_Mouse Aging HSCs"
+TAG = "26430063_Mouse_Aging_HSCs"
+Read_Seurat_file_in_the_folder_UCSC(folder)
+
+
+#####
+##### OK!!! let us fill the datasets and go to the old server !!!! ########
+#####
+##### OK!!! let us process the other project !!! ##########################
+#####
+
+cd /home/plyu3/cell_ann_part_datasets1
+
+mkdir pmid34642245_seurat_obj_folder
+mv pmid34642245_seurat_obj pmid34642245_seurat_obj_folder/
+
+to = "/zp1/data/plyu3/CellAnn_batch4/"
+
+folder = "/home/plyu3/cell_ann_part_datasets1/pmid34642245_seurat_obj_folder"
+TAG = "34642245"
+Read_Seurat_file_in_the_folder_UCSC(folder)
+Prepare_Seurat_file_in_the_folder_UCSC(folder,norm="log")
+Prepare_Seurat_file_in_the_folder_UCSC_STEP2(folder)
+Prepare_Seurat_file_in_the_folder_UCSC_STEP2_copy_folder(folder,to,TAG)
+
+#####
+cd /home/plyu3/cell_ann_part_datasets1
+
+mkdir pmid33444290_seurat_obj_folder
+mv pmid33444290_seurat_obj pmid33444290_seurat_obj_folder/
+
+folder = "/home/plyu3/cell_ann_part_datasets1/pmid33444290_seurat_obj_folder"
+TAG = "33444290"
+Read_Seurat_file_in_the_folder_UCSC(folder)
+Prepare_Seurat_file_in_the_folder_UCSC(folder,norm="log")
+Prepare_Seurat_file_in_the_folder_UCSC_STEP2(folder)
+Prepare_Seurat_file_in_the_folder_UCSC_STEP2_copy_folder(folder,to,TAG)
+
+
+#####
+
+cd /home/plyu3/cell_ann_part_datasets1
+
+mkdir pmid32994417_seurat_obj_folder
+mv pmid32994417_seurat_obj pmid32994417_seurat_obj_folder/
+
+folder = "/home/plyu3/cell_ann_part_datasets1/pmid32994417_seurat_obj_folder"
+TAG = "32994417"
+Read_Seurat_file_in_the_folder_UCSC(folder)
+Prepare_Seurat_file_in_the_folder_UCSC(folder,norm="log")
+Prepare_Seurat_file_in_the_folder_UCSC_STEP2(folder)
+Prepare_Seurat_file_in_the_folder_UCSC_STEP2_copy_folder(folder,to,TAG)
+
+#####
+conda activate seurat4
+to = "/zp1/data/plyu3/CellAnn_batch4/"
+
+mkdir pmid32427356_seurat_obj_folder 
+mv pmid32427356_seurat_obj pmid32427356_seurat_obj_folder/
+
+folder = "/home/plyu3/cell_ann_part_datasets1/pmid32427356_seurat_obj_folder"
+TAG = "32427356"
+Read_Seurat_file_in_the_folder_UCSC(folder)
+Prepare_Seurat_file_in_the_folder_UCSC(folder,norm="log")
+Prepare_Seurat_file_in_the_folder_UCSC_STEP2(folder)
+Prepare_Seurat_file_in_the_folder_UCSC_STEP2_copy_folder(folder,to,TAG)
+
+#####
+
+folder = "/home/plyu3/cell_ann_part_datasets1/34584087_scRNA_Human Ocular_Sclera and Choroid"
+TAG = "34584087_scRNA_Human_Ocular_Scler"
+
+setwd(folder)
+
+######
+Broad_matrix_process <- function(file,sep="\t"){
+	matrix = read.table(file,header=T,sep=sep)
+	mat_input = as.matrix(matrix[,-1])
+	rownames(mat_input) = matrix[,1]
+	print(mat_input[1:5,1:5])
+	#######
+	return(mat_input)
+}
+
+mat_input = Broad_matrix_process("Matrix.txt")
+
+
+Broad_cluster_process <- function(file){
+	#####
+	cluster = read.table(file,header=T,sep="\t")
+	cluster = cluster[-1,]
+	#####
+	print(head(cluster))
+	#####
+	return(cluster)
+}
+
+colnames(cluster) <- c('cell','dim1','dim2','phase','celltype')
+
+########
+Broad_create_seurat_obj <- function(mat_input,cluster,file){
+	######
+	library(Seurat)
+	###### saveRDS #######
+	seurat_obj = CreateSeuratObject(mat_input)
+	######
+	m = match(colnames(seurat_obj),cluster[,1])
+	cluster = cluster[m,]
+	######
+	head(cluster)
+	head(colnames(seurat_obj))
+	######
+	seurat_obj@meta.data = cbind(seurat_obj@meta.data,cluster)
+	######
+	k = which(colnames(seurat_obj@meta.data) %in% c("dim1","dim2","dim3") == T)
+	if(length(k) > 0){
+		for(j in k){
+			seurat_obj@meta.data[,j] = as.numeric(seurat_obj@meta.data[,j])
+		}
+	}
+	######
+	saveRDS(seurat_obj,file=file)
+}
+
+Broad_create_seurat_obj(mat_input,cluster,file="pmid_34584087_seurat_obj")
+
+
+
+folder = "/home/plyu3/cell_ann_part_datasets1/34584087_scRNA_Human Ocular_Sclera and Choroid"
+TAG = "34584087_scRNA_Human_Ocular_Scler"
+
+Read_Seurat_file_in_the_folder_UCSC(folder)
+Prepare_Seurat_file_in_the_folder_UCSC(folder,norm="log")
+Prepare_Seurat_file_in_the_folder_UCSC_STEP2(folder)
+Prepare_Seurat_file_in_the_folder_UCSC_STEP2_copy_folder(folder,to,TAG)
+
+#####
+############# OK!!!! ####################
+#####
+
+##### only one cell type !!!! ###########
+#####
+folder = "/home/plyu3/cell_ann_part_datasets1/34584087_scRNA_Human Ocular_RPE"
+TAG = "34584087_scRNA_Human_Ocular_RPE"
+
+setwd(folder)
+mat_input = Broad_matrix_process("Matrix.txt")
+
+cluster = Broad_cluster_process("Cluster.txt")
+colnames(cluster) <- c('cell','dim1','dim2','phase','celltype')
+
+Broad_create_seurat_obj(mat_input,cluster,file="pmid_34584087_RPE_seurat_obj")
+
+Read_Seurat_file_in_the_folder_UCSC(folder)
+Prepare_Seurat_file_in_the_folder_UCSC(folder,norm="log")
+
+
+######
+folder = "/home/plyu3/cell_ann_part_datasets1/34584087_scRNA_Human Ocular_Retina"
+TAG = "34584087_scRNA_Human_Ocular_Retina"
+
+setwd(folder)
+mat_input = Broad_matrix_process("Matrix.txt")
+cluster = Broad_cluster_process("Cluster.txt")
+colnames(cluster) <- c('cell','dim1','dim2','phase','celltype')
+
+Broad_create_seurat_obj(mat_input,cluster,file="pmid_34584087_scRNA_Human_Ocular_Retina_seurat_obj")
+
+Read_Seurat_file_in_the_folder_UCSC(folder)
+Prepare_Seurat_file_in_the_folder_UCSC(folder,norm="log")
+Prepare_Seurat_file_in_the_folder_UCSC_STEP2(folder)
+Prepare_Seurat_file_in_the_folder_UCSC_STEP2_copy_folder(folder,to,TAG)
+
+
+#######
+
+folder = "/home/plyu3/cell_ann_part_datasets1/34584087_scRNA_Human Ocular_Iris"
+TAG = "34584087_scRNA_Human_Ocular_Iris"
+
+setwd(folder)
+mat_input = Broad_matrix_process("Matrix.txt")
+cluster = Broad_cluster_process("Cluster.txt")
+colnames(cluster) <- c('cell','dim1','dim2','phase','celltype')
+
+Broad_create_seurat_obj(mat_input,cluster,file="pmid_34584087_scRNA_Human_Iris_seurat_obj")
+
+Read_Seurat_file_in_the_folder_UCSC(folder)
+Prepare_Seurat_file_in_the_folder_UCSC(folder,norm="log")
+Prepare_Seurat_file_in_the_folder_UCSC_STEP2(folder)
+Prepare_Seurat_file_in_the_folder_UCSC_STEP2_copy_folder(folder,to,TAG)
+
+######## Next !!! ######
+
+folder = "/home/plyu3/cell_ann_part_datasets1/34584087_scRNA_Human Ocular_Cornea"
+TAG = "34584087_scRNA_Human_Ocular_Cornea"
+
+setwd(folder)
+mat_input = Broad_matrix_process("Matrix.txt")
+cluster = Broad_cluster_process("Cluster.txt")
+colnames(cluster) <- c('cell','dim1','dim2','phase','celltype')
+
+Broad_create_seurat_obj(mat_input,cluster,file="pmid_34584087_scRNA_Human_Cornea_seurat_obj")
+
+Read_Seurat_file_in_the_folder_UCSC(folder)
+Prepare_Seurat_file_in_the_folder_UCSC(folder,norm="log")
+Prepare_Seurat_file_in_the_folder_UCSC_STEP2(folder)
+Prepare_Seurat_file_in_the_folder_UCSC_STEP2_copy_folder(folder,to,TAG)
+
+######## Next !!! ######
+
+######## No matrix !!!! #########
+folder = "/home/plyu3/cell_ann_part_datasets1/33711272_scRNA_Human renal cell carcinoma"
+TAG = "33711272_Human_renal_cell_carcinoma"
+setwd(folder)
+mat_input = Broad_matrix_process("Matrix.txt")
+cluster = Broad_cluster_process("Cluster.txt")
+colnames(cluster) <- c('cell','dim1','dim2','phase','celltype')
+
+
+######## 
+folder = "/home/plyu3/cell_ann_part_datasets1/33664492_scRNA_Human prostate cancer"
+TAG = "33664492_scRNA_Human_prostate_cancer"
+setwd(folder)
+mat_input = Broad_matrix_process("Matrix.txt")
+cluster = Broad_cluster_process("Cluster.txt")
+
+####
+cluster$NAME = paste0("X",cluster$NAME)
+colnames(cluster) <- c('cell','celltype','celltype2','dim1','dim2')
+
+Broad_create_seurat_obj(mat_input,cluster,file="pmid_333664492_scRNA_Human_prostate_seurat_obj")
+Read_Seurat_file_in_the_folder_UCSC(folder)
+Prepare_Seurat_file_in_the_folder_UCSC(folder,norm="counts")
+Prepare_Seurat_file_in_the_folder_UCSC_STEP2(folder)
+Prepare_Seurat_file_in_the_folder_UCSC_STEP2_copy_folder(folder,to,TAG)
+
+###### No matrix !!! #######
+folder = "/home/plyu3/cell_ann_part_datasets1/33619488_scRNA_Human_Covid19 Nasal Swab"
+TAG = "33619488_Covid19_Nasal_Swab"
+setwd(folder)
+mat_input = Broad_matrix_process("Matrix.txt")
+cluster = Broad_cluster_process("Cluster.txt")
+
+
+######
+folder = "/home/plyu3/cell_ann_part_datasets1/32413319_scRNA_Mouse Nasal mucosa after interferon"
+TAG = "32413319_Mouse_Nasal_mucosa"
+setwd(folder)
+mat_input = Broad_matrix_process("Matrix.csv",sep=",")
+cluster = Broad_cluster_process("Cluster.txt")
+
+cluster = cluster[,c(6,12)]
+colnames(cluster) <- c('cell','celltype')
+######
+###### modify the UMAPs for these samples #########
+######
+
+Broad_create_seurat_obj(mat_input,cluster,file="pmid_32413319_Mouse_Nasal_mucosa_seurat_obj")
+Read_Seurat_file_in_the_folder_UCSC(folder)
+Prepare_Seurat_file_in_the_folder_UCSC(folder,norm="log")
+Prepare_Seurat_file_in_the_folder_UCSC_STEP2(folder)
+Prepare_Seurat_file_in_the_folder_UCSC_STEP2_copy_folder(folder,to,TAG)
+
+
+######
+###### we need modify the umaps bu our selfs #######
+######
+
+folder = "/home/plyu3/cell_ann_part_datasets1/32251406_scRNA_Human PBMC pre and post HIV"
+TAG = "32251406_PBMC_HIV"
+setwd(folder)
+mat_input = Broad_matrix_process("Matrix.txt.gz")
+cluster = Broad_cluster_process("Cluster.txt")
+
+cluster = cluster[,c(1,8)]
+colnames(cluster) <- c('cell','celltype')
+Broad_create_seurat_obj(mat_input,cluster,file="pmid_32251406_PBMC_HIV_seurat_obj")
+
+Read_Seurat_file_in_the_folder_UCSC(folder)
+Prepare_Seurat_file_in_the_folder_UCSC(folder,norm="log")
+Prepare_Seurat_file_in_the_folder_UCSC_STEP2(folder)
+Prepare_Seurat_file_in_the_folder_UCSC_STEP2_copy_folder(folder,to,TAG)
+
+#######
+####### yellow #######
+#######
+
+
+
+
+
+
+
+
+

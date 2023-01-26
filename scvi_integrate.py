@@ -94,7 +94,7 @@ def Mainscvi(file_input,file_output):
     ####
     lvae.train(max_epochs=20, n_samples_per_label=100)
     global_seurat.obsm["X_scANVI"] = lvae.get_latent_representation(global_seurat)
-    ####
+    #### ####
     global_seurat_scANVI = pd.DataFrame(global_seurat.obsm['X_scANVI'])
     global_seurat_scANVI.add_prefix('SCANVI_')
     Cellnames = list(pd.DataFrame(global_seurat.obs['_scvi_batch']).index)

@@ -173,6 +173,8 @@ loadRData <- function(fileName){
     get(ls()[ls() != "fileName"])
 }
 
+
+#####
 #####
 #####
 #####
@@ -294,6 +296,10 @@ load('.RData')
 
 setwd("/zp1/data/plyu3/Cell_ann_test/Tabula_Muris_mouse_data_prepare/")
 reference_prepare_table1 <- read.table(file='reference_prepare_table1_202211.txt',sep='\t',header=T)
+
+
+
+
 
 ######### combined the results and save the corrected average expression matrix !!! ########
 #########
@@ -857,6 +863,8 @@ CellAnn_Module_merge_list <- function(Cor_input_list){
 }
 
 #################
+#################
+
 
 CellAnn_Module_1 <- function(query_data_matrix,reference_index,reference_prepare_table1,reference_folder){
 	######### first we will get the gene matrix of reference_index ###########
@@ -964,35 +972,35 @@ CellAnn_Module_2_res = CellAnn_Module_2(query_data_matrix,reference_index,refere
 
 
 Compare3_corr <- function(ct_list,tmp_index){
-	######
-	empty_matrix = matrix(0,nrow=length(ct_list),ncol=length(ct_list))
-	######
-	for(i in 1:length(ct_list)){
-		for(j in 1:length(ct_list)){
-			v_i = ct_list[[i]]
-			v_j = ct_list[[j]]
-			#### i vs j #########
-			res1 = wilcox.test(v_i, v_j, alternative = "greater")
-			res2 = wilcox.test(v_i, v_j, alternative = "less")
-			if(res1$p.value < 0.05 & res2$p.value > 0.05){
-				empty_matrix[i,j] = 1
-			}
-			if(res1$p.value > 0.05 & res2$p.value < 0.05){
-				empty_matrix[i,j] = -1
-			}
-		}
-	}
-	matrix_row_max = apply(empty_matrix,1,sum)
-	k = which(matrix_row_max == max(matrix_row_max))
-	if(length(k) > 1){
-		tmp_index1 = tmp_index[k]
-		tmp_index1 = tmp_index1[!duplicated(tmp_index1)]
-		tmp_index1 = paste(tmp_index1,collapse=' & ')
-	}else{
-		tmp_index1 = tmp_index
-	}
-	######
-	return(tmp_index1)
+  ######
+  empty_matrix = matrix(0,nrow=length(ct_list),ncol=length(ct_list))
+  ######
+  for(i in 1:length(ct_list)){
+    for(j in 1:length(ct_list)){
+      v_i = ct_list[[i]]
+      v_j = ct_list[[j]]
+      #### i vs j #########
+      res1 = wilcox.test(v_i, v_j, alternative = "greater")
+      res2 = wilcox.test(v_i, v_j, alternative = "less")
+      if(res1$p.value < 0.05 & res2$p.value > 0.05){
+        empty_matrix[i,j] = 1
+      }
+      if(res1$p.value > 0.05 & res2$p.value < 0.05){
+        empty_matrix[i,j] = -1
+      }
+    }
+  }
+  matrix_row_max = apply(empty_matrix,1,sum)
+  k = which(matrix_row_max == max(matrix_row_max))
+  if(length(k) > 1){
+    tmp_index1 = tmp_index[k]
+    tmp_index1 = tmp_index1[!duplicated(tmp_index1)]
+    tmp_index1 = paste(tmp_index1,collapse=' & ')
+  }else{
+    tmp_index1 = tmp_index[k]
+  }
+  ######
+  return(tmp_index1)
 }
 
 CellAnn_Module_3 <- function(query_data_matrix,reference_index,reference_prepare_table2,CellAnn_Module_1_res,CellAnn_Module_2_res){
@@ -1242,6 +1250,9 @@ Class_results <- function(query_merge,ref_ct,NDtag='Unassigned'){
 ####### we look at the codes #################################
 ####### we look at the codes #################################
 
+ssh plyu3@omb2.onc.jhmi.edu
+U[9C20&&
+
 tmp_tab <- read.csv("database/database_sheet.csv", header = T, encoding = "UTF-8")
 
 ####### PMID species sample study, OK!!!! ####################
@@ -1290,8 +1301,8 @@ celltype      dim1       dim2
 ######## we will first create a table: #############
 ########
 
-PMID = 
-Dimplot_file_name = paste0("pmid",PMID)
+
+Dimplot_file_name = paste0("pmid",PMID,"_Dimplot")
 
 PMID_short = gsub('30283141_','',PMID)
 Seurat_file_name = paste0('Tabula_Muris_mouse_',PMID_short,'_Ref')
@@ -1307,17 +1318,177 @@ Cell_ann_prepare_the_Dimplot_file <- function(prepare_table){
 		seurat_obj = loadRData(file)
 		##### we use the celltype tags !!!! ########
 		celltype = seurat_obj$celltype
-		dims_table = seurat_obj@reductions$umap@cell.embeddings
+		dims_table = data.frame(seurat_obj@reductions$umap@cell.embeddings)
 		colnames(dims_table) = c('dim1','dim2')
 		#####
-		
- 
-
+		dims_table$celltype = as.character(celltype)
+		##### Then we save the RDS file !!!! #######
+		saveRDS(dims_table,file=prepare_table$Dimplot_file_name[i])
 	}
-
 }
 
 
+Cell_ann_prepare_the_Dimplot_file(prepare_table)
+
+
+
+#######
+####### first we will see the reference_prepare_table1 !!!! ##########
+#######
+
+conda activate seurat4
+
+setwd('/zp1/data/plyu3/Cell_ann_test/Tabula_Muris_mouse_data_prepare/')
+write.table(reference_prepare_table1,file='reference_prepare_table1_202211.txt',sep='\t',quote=F,row.names=F)
+reference_prepare_table1 <- read.table('reference_prepare_table1_202211.txt',sep='\t',header=T)
+
+####### we should keep reference_index & background_index & background_reference_avg_mat & background_background_avg_mat & background_background_degs ########
+####### we should add the ID for these files ##########
+
+####### we need to add a tag for PMID in the table ####
+
+reference_prepare_table1$PMID = paste0('30283141_',reference_prepare_table1$reference_index)
+
+index_tag = c('PMID','reference_index','background_index','background_reference_avg_mat','background_background_avg_mat','background_background_degs')
+
+k = match(index_tag,colnames(reference_prepare_table1))
+
+reference_table1 = reference_prepare_table1[,k]
+
+write.table(reference_table1,file='reference_table1.txt',sep='\t',quote=F,row.names=F)
+
+####### then we will found the avg expression and 
+#######
+
+####### 咱们首先 #################################
+
+####### then we will prepare the avg reference_table2.txt
+#######
+
+
+
+setwd("/zp1/data/plyu3/Cell_ann_test/Tabula_Muris_mouse_data_prepare/")
+reference_prepare_table2 <- read.table(file='reference_prepare_table2_202211.txt',sep='\t',header=T)
+
+#######
+#######
+reference_prepare_table2$PMID = paste0('30283141_',reference_prepare_table2$reference_index)
+
+index_tag = c('PMID','reference_index','reference_avg_mat','reference_avg_sub_mat','reference_marker','reference_sub_marker')
+
+#######
+#######
+
+k = match(index_tag,colnames(reference_prepare_table2))
+
+reference_table2 = reference_prepare_table2[,k]
+
+#######
+#######
+
+
+write.table(reference_table2,file='reference_table2.txt',sep='\t',quote=F,row.names=F)
+
+
+#######
+####### Human and Mouse genes ######
+#######
+
+setwd('/zp1/data/plyu3/Cell_ann_test/Tabula_Muris_mouse_data_prepare/Totally_compared_datasets')
+
+HM_Genes <- read.table('HOM_MouseHumanSequence.rpt',sep='\t',header=T)
+
+42678670
+
+HM_Genes[which(HM_Genes$DB.Class.Key == '42678670'),]
+#######
+
+HM_Genes_cl = HM_Genes[,c(1,2,4)]
+
+HM_Genes_cl_sp = split(HM_Genes_cl,HM_Genes_cl$DB.Class.Key)
+
+HM_Genes_cl_sp_len = sapply(HM_Genes_cl_sp,function(x) dim(x)[1])
+
+k = which(HM_Genes_cl_sp_len == 2)
+
+HM_Genes_cl_sp_cl = HM_Genes_cl_sp[k]
+
+20489
+
+HM_Genes_cl_sp_cl[20489]
+
+out_list <- list()
+for(i in 1:length(HM_Genes_cl_sp_cl)){
+	HM_Genes_cl_sp_cl_tmp = HM_Genes_cl_sp_cl[[i]]
+	out_data = data.frame(Mouse=HM_Genes_cl_sp_cl_tmp$Symbol[1],Human=HM_Genes_cl_sp_cl_tmp$Symbol[2])
+	out_list <- c(out_list,list(out_data))
+}
+
+Mouse_Human_Genes = do.call('rbind',out_list)
+
+saveRDS(Mouse_Human_Genes,file='Mouse_Human_Genes')
+
+
+##########
+##### prepare input files !!! ##########
+##########
+
+conda activate seurat4
+R
+setwd('/zp1/data/plyu3/Cell_ann_test/Tabula_Muris_mouse_data_prepare/Totally_compared_datasets')
+
+
+files = list.files()
+
+Input1 <- loadRData('Tabula_Muris_mouse_droplet_Bladder_Query_Cluster_Avg')
+
+colnames(Input1)
+
+Tabula_Muris_mouse_droplet_Bladder_Query <- loadRData('Tabula_Muris_mouse_droplet_Bladder_Query')
+
+table(Tabula_Muris_mouse_droplet_Bladder_Query$seurat_clusters)
+
+
+######
+
+mat = Input1
+
+file='droplet_Bladder_input_Step1.txt'
+
+Output_input_Step1 <- function(mat,file){
+	#############
+	dataF = data.frame(mat)
+	#############
+	dataF2 = data.frame(GENE = rownames(dataF))
+	#############
+	dataF_all = cbind(dataF2,dataF)
+	#############
+	write.table(dataF_all,file=file,quote=F,sep='\t',row.names=F)
+}
+
+Output_input_Step1(Input1,'droplet_Bladder_input_Step1.txt')
+
+
+#######
+
+seurat = Tabula_Muris_mouse_droplet_Bladder_Query
+file='droplet_Bladder_input_Step4.txt'
+
+Output_input_Step4 <- function(seurat,file){
+	######
+	###### cell cluster dim1 dim2 ########
+	cell = colnames(seurat)
+	cluster = seurat$seurat_clusters
+	######
+	dim1 = seurat[['umap']]@cell.embeddings[,1]
+	dim2 = seurat[['umap']]@cell.embeddings[,2]
+	######
+	out = data.frame(cell,cluster,dim1,dim2)
+	######
+	write.table(out,file=file,quote=F,sep='\t',row.names=F)
+}
+
+Output_input_Step4(seurat,'droplet_Bladder_input_Step4.txt')
 
 
 
