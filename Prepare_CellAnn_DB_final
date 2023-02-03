@@ -568,10 +568,10 @@ Prepare_Seurat_file_in_the_folder_UCSC_STEP2_copy_folder(folder,to,TAG)
 
 
 
-
+###########
 ########### Next !!!! #############
 ########### OK!!!! let do it another 5 samples !!!!! #######
-
+###########
 
 folder = "/zp1/data/plyu3/UCSC/pmid29980650_Kidney Inflammatory Response"
 TAG = "29980650_Kidney"
@@ -787,6 +787,9 @@ Prepare_Seurat_file_in_the_folder_UCSC_STEP2_copy_folder(folder,to,TAG)
 ##########
 ### red ####
 ### red #### something wrong !!! ######
+
+### move to batch to = "/zp1/data/plyu3/CellAnn_batch8/"
+
 folder = "/zp1/data/plyu3/UCSC/pmid32214235_Human cell landscape"
 TAG = "32214235_Human_cell_landscape"
 Read_Seurat_file_in_the_folder_UCSC(folder)
@@ -849,6 +852,9 @@ Prepare_Seurat_file_in_the_folder_UCSC(folder,norm="counts")
 Prepare_Seurat_file_in_the_folder_UCSC_STEP2(folder)
 Prepare_Seurat_file_in_the_folder_UCSC_STEP2_copy_folder(folder,to,TAG)
 
+
+####### red ###
+to = "/zp1/data/plyu3/CellAnn_batch8/"
 folder = "/zp1/data/plyu3/UCSC/pmid32591762_COVID-19 airways"
 TAG = "32591762_COVID-19"
 Read_Seurat_file_in_the_folder_UCSC(folder)
@@ -975,7 +981,7 @@ Prepare_Seurat_file_in_the_folder_UCSC_STEP2_copy_folder(folder,to,TAG)
 
 
 folder = "/zp1/data/plyu3/UCSC/pmid33259798_Human airway basal stem cells"
-TAG = "33259798_Human_airway_basal "
+TAG = "33259798_Human_airway_basal"
 Read_Seurat_file_in_the_folder_UCSC(folder)
 Prepare_Seurat_file_in_the_folder_UCSC(folder,norm="log")
 Prepare_Seurat_file_in_the_folder_UCSC_STEP2(folder)
@@ -1209,6 +1215,7 @@ Prepare_Seurat_file_in_the_folder_UCSC_STEP2(folder)
 Prepare_Seurat_file_in_the_folder_UCSC_STEP2_copy_folder(folder,to,TAG)
 
 
+###### we will update the database_sheet ############
 ######
 ###### OK!!! we copy these files from batch3 ########
 ######
@@ -1219,6 +1226,7 @@ Prepare_Seurat_file_in_the_folder_UCSC_STEP2_copy_folder(folder,to,TAG)
 ###### pink ######
 ###### pink ######
 ###### pink ######
+######
 source("/zp1/data/plyu3/UCSC/Prepare_CellAnn_DB_final_source.R")
 
 
@@ -1232,7 +1240,14 @@ to = "/zp1/data/plyu3/CellAnn_batch4/"
 
 
 #### Not work!!! #####
+#### process this one !!! #######
+#### too big !!!!! ##############
+
 folder = "/zp1/data/plyu3/UCSC/pmid35549310_Developing human immune system"
+setwd(folder)
+
+mat = Broad_matrix_process("exprMatrix.tsv")
+
 TAG = "35549310_Developing_human_immune"
 Read_Seurat_file_in_the_folder_UCSC(folder)
 Prepare_Seurat_file_in_the_folder_UCSC(folder,norm="log")
@@ -1285,12 +1300,15 @@ Prepare_Seurat_file_in_the_folder_UCSC_STEP2(folder)
 Prepare_Seurat_file_in_the_folder_UCSC_STEP2_copy_folder(folder,to,TAG)
 
 
+###### no ? #######
+######
+######
 folder = "/zp1/data/plyu3/UCSC/26430063_scRNA_Mouse Aging HSCs"
 TAG = "26430063_Mouse_Aging_HSCs"
 Read_Seurat_file_in_the_folder_UCSC(folder)
 
 
-#####
+##### OK!!! to the old 1server 
 ##### OK!!! let us fill the datasets and go to the old server !!!! ########
 #####
 ##### OK!!! let us process the other project !!! ##########################
@@ -1302,6 +1320,12 @@ mkdir pmid34642245_seurat_obj_folder
 mv pmid34642245_seurat_obj pmid34642245_seurat_obj_folder/
 
 to = "/zp1/data/plyu3/CellAnn_batch4/"
+
+
+#### red #### at the new server ####
+#### red ####
+#### red ####
+
 
 folder = "/home/plyu3/cell_ann_part_datasets1/pmid34642245_seurat_obj_folder"
 TAG = "34642245"
@@ -1467,6 +1491,8 @@ TAG = "34584087_scRNA_Human_Ocular_Iris"
 setwd(folder)
 mat_input = Broad_matrix_process("Matrix.txt")
 cluster = Broad_cluster_process("Cluster.txt")
+
+k = which(colnames(mat_input) %in% cluster[,1] == T)
 colnames(cluster) <- c('cell','dim1','dim2','phase','celltype')
 
 Broad_create_seurat_obj(mat_input,cluster,file="pmid_34584087_scRNA_Human_Iris_seurat_obj")
@@ -1476,6 +1502,8 @@ Prepare_Seurat_file_in_the_folder_UCSC(folder,norm="log")
 Prepare_Seurat_file_in_the_folder_UCSC_STEP2(folder)
 Prepare_Seurat_file_in_the_folder_UCSC_STEP2_copy_folder(folder,to,TAG)
 
+
+########
 ######## Next !!! ######
 
 folder = "/home/plyu3/cell_ann_part_datasets1/34584087_scRNA_Human Ocular_Cornea"
@@ -1495,6 +1523,9 @@ Prepare_Seurat_file_in_the_folder_UCSC_STEP2_copy_folder(folder,to,TAG)
 
 ######## Next !!! ######
 
+
+
+######## 
 ######## No matrix !!!! #########
 folder = "/home/plyu3/cell_ann_part_datasets1/33711272_scRNA_Human renal cell carcinoma"
 TAG = "33711272_Human_renal_cell_carcinoma"
@@ -1521,7 +1552,10 @@ Prepare_Seurat_file_in_the_folder_UCSC(folder,norm="counts")
 Prepare_Seurat_file_in_the_folder_UCSC_STEP2(folder)
 Prepare_Seurat_file_in_the_folder_UCSC_STEP2_copy_folder(folder,to,TAG)
 
+###### red #################
 ###### No matrix !!! #######
+######
+
 folder = "/home/plyu3/cell_ann_part_datasets1/33619488_scRNA_Human_Covid19 Nasal Swab"
 TAG = "33619488_Covid19_Nasal_Swab"
 setwd(folder)
@@ -1572,8 +1606,1690 @@ Prepare_Seurat_file_in_the_folder_UCSC_STEP2_copy_folder(folder,to,TAG)
 ####### yellow #######
 #######
 
+#######
+####### OK!!! then the next !!!! #######
+####### next we will start to batch5 !!! ######
+#######
+
+conda activate seurat4
+to = "/zp1/data/plyu3/CellAnn_batch5/"
+
+source("/zp1/data/plyu3/UCSC/Prepare_CellAnn_DB_final_source.R")
 
 
+
+########## ok!!! #######
+########## we start here !!! ######
+folder = "/home/plyu3/cell_ann_part_datasets1/30526881_scRNA_Human Cultured Small intestinal organoids"
+TAG = "30526881_Human_intestinal_organoids"
+setwd(folder)
+
+
+mat_input = Broad_matrix_process("Matrix.csv.gz",sep=",")
+cluster = Broad_cluster_process("Cluster.csv",sep=',')
+
+cluster = cluster[,c(1,4,2,3)]
+colnames(cluster) <- c('cell','celltype','dim1','dim2')
+Broad_create_seurat_obj(mat_input,cluster,file="30526881_Human_intestinal_organoids_seurat_obj")
+
+Read_Seurat_file_in_the_folder_UCSC(folder)
+Prepare_Seurat_file_in_the_folder_UCSC(folder,norm="log")
+Prepare_Seurat_file_in_the_folder_UCSC_STEP2(folder)
+Prepare_Seurat_file_in_the_folder_UCSC_STEP2_copy_folder(folder,to,TAG)
+
+########### OK!!! next 2 ######
+mkdir /zp1/data/plyu3/CellAnn_batch5/
+
+mkdir /home/plyu3/cell_ann_part_datasets1/30382198_scRNA_Mouse_Neocortex_LGD
+mkdir /home/plyu3/cell_ann_part_datasets1/30382198_scRNA_Mouse_Neocortex_ALM
+
+cp /home/plyu3/cell_ann_part_datasets1/30382198_scRNA_Mouse_Neocortex/*LGd* /home/plyu3/cell_ann_part_datasets1/30382198_scRNA_Mouse_Neocortex_LGD/
+cp /home/plyu3/cell_ann_part_datasets1/30382198_scRNA_Mouse_Neocortex/Matrix_lateral geniculate complex.txt /home/plyu3/cell_ann_part_datasets1/30382198_scRNA_Mouse_Neocortex_LGD/
+cp /home/plyu3/cell_ann_part_datasets1/30382198_scRNA_Mouse_Neocortex/'Cluster_lateral geniculate complex.txt' /home/plyu3/cell_ann_part_datasets1/30382198_scRNA_Mouse_Neocortex_LGD/
+
+cp 'Cluster_anterior lateral motor.txt' /home/plyu3/cell_ann_part_datasets1/30382198_scRNA_Mouse_Neocortex_ALM/
+cp 'Matrix_anterior lateral motor.txt' /home/plyu3/cell_ann_part_datasets1/30382198_scRNA_Mouse_Neocortex_ALM/
+
+
+folder = "/home/plyu3/cell_ann_part_datasets1/30382198_scRNA_Mouse_Neocortex_LGD"
+TAG = "30382198_Mouse_Neocortex_LGD"
+setwd(folder)
+
+
+##### #####
+mat_input = Broad_matrix_process("Matrix_lateral geniculate complex.txt",sep="\t")
+colnames(mat_input) = gsub('.','-',colnames(mat_input),fixed=T)
+cluster = Broad_cluster_process("Cluster_lateral geniculate complex.txt",sep='\t')
+cluster = cluster[,c(1,2)]
+colnames(cluster) <- c('cell','celltype')
+
+k = which(colnames(mat_input) %in% cluster$cell == T)
+
+Broad_create_seurat_obj(mat_input,cluster,file="330382198_Mouse_Neocortex_LGD_seurat_obj")
+
+### tmp = readRDS("330382198_Mouse_Neocortex_LGD_seurat_obj")
+input_folder = folder
+Read_Seurat_file_in_the_folder_UCSC(folder)
+### 
+Prepare_Seurat_file_in_the_folder_UCSC(folder,norm="counts")
+Prepare_Seurat_file_in_the_folder_UCSC_STEP2(folder)
+Prepare_Seurat_file_in_the_folder_UCSC_STEP2_copy_folder(folder,to,TAG)
+
+
+
+###### seurat_obj <- readRDS('pmid30382198LGd_seurat_obj')
+
+folder = "/home/plyu3/cell_ann_part_datasets1/30382198_scRNA_Mouse_Neocortex_ALM"
+TAG = "30382198_Mouse_Neocortex_ALM"
+setwd(folder)
+mat_input = Broad_matrix_process("Matrix_anterior lateral motor.txt",sep=",")
+colnames(mat_input) = gsub('.','-',colnames(mat_input),fixed=T)
+cluster = Broad_cluster_process("Cluster_anterior lateral motor.txt",sep="\t")
+cluster = cluster[,c(1,2)]
+colnames(cluster) <- c('cell','celltype')
+Broad_create_seurat_obj(mat_input,cluster,file="330382198_Mouse_Neocortex_ALM_seurat_obj")
+
+Read_Seurat_file_in_the_folder_UCSC(folder)
+Prepare_Seurat_file_in_the_folder_UCSC(folder,norm="counts")
+
+input_folder = folder
+
+Prepare_Seurat_file_in_the_folder_UCSC_STEP2(folder)
+Prepare_Seurat_file_in_the_folder_UCSC_STEP2_copy_folder(folder,to,TAG)
+
+####### OK!!! #####
+####### Next3 ######
+
+
+folder = "/home/plyu3/cell_ann_part_datasets1/27806376_scRNA_Human Oligodendroglioma"
+TAG = "27806376_Oligodendroglioma"
+setwd(folder)
+mat_input = Broad_matrix_process("Matrix.txt",sep="\t")
+#colnames(mat_input) = gsub('.','-',colnames(mat_input),fixed=T)
+cluster = Broad_cluster_process("Cluster.txt",sep="\t")
+cluster = cluster[,c(1,2)]
+colnames(cluster) <- c('cell','celltype')
+
+Broad_create_seurat_obj(mat_input,cluster,file="27806376_Oligodendroglioma_seurat_obj")
+
+Read_Seurat_file_in_the_folder_UCSC(folder)
+
+Prepare_Seurat_file_in_the_folder_UCSC(folder,norm="counts")
+Prepare_Seurat_file_in_the_folder_UCSC_STEP2(folder)
+Prepare_Seurat_file_in_the_folder_UCSC_STEP2_copy_folder(folder,to,TAG)
+
+
+####### OK!!! #####
+####### Next4 ######
+
+folder = "/home/plyu3/cell_ann_part_datasets1/27565351_scRNA_Mouse Retinal Bipolar Neuron"
+TAG = "27565351_Mouse_Retinal_Bipolar"
+setwd(folder)
+mat_input = Broad_matrix_process("Matrix.txt",sep="\t")
+cluster = Broad_cluster_process("Cluster.txt",sep="\t")
+cluster = cluster[,c(1,2)]
+colnames(cluster) <- c('cell','celltype')
+
+Broad_create_seurat_obj(mat_input,cluster,file="27565351_Mouse_Retinal_Bipolar_seurat_obj")
+
+Read_Seurat_file_in_the_folder_UCSC(folder)
+Prepare_Seurat_file_in_the_folder_UCSC(folder,norm="log")
+Prepare_Seurat_file_in_the_folder_UCSC_STEP2(folder)
+Prepare_Seurat_file_in_the_folder_UCSC_STEP2_copy_folder(folder,to,TAG)
+
+#######
+####### Next5 ######
+#######
+
+folder = "/home/plyu3/cell_ann_part_datasets1/27471252_snRNA_Adult Mouse Hippocampus"
+TAG = "27471252_Mouse_Hippocampus"
+setwd(folder)
+mat_input = Broad_matrix_process("Matrix.txt",sep="\t")
+cluster = Broad_cluster_process("Cluster.txt",sep="\t")
+cluster = cluster[,c(1,2)]
+colnames(cluster) <- c('cell','celltype')
+Broad_create_seurat_obj(mat_input,cluster,file="27471252_Mouse_Hippocampus_seurat_obj")
+
+Read_Seurat_file_in_the_folder_UCSC(folder)
+Prepare_Seurat_file_in_the_folder_UCSC(folder,norm="counts")
+Prepare_Seurat_file_in_the_folder_UCSC_STEP2(folder)
+Prepare_Seurat_file_in_the_folder_UCSC_STEP2_copy_folder(folder,to,TAG)
+
+
+
+###### OK!!! #######
+###### Next !!!!!###
+######
+
+folder = "/home/plyu3/cell_ann_part_datasets1/27124452_scRNA_Human Metastatic Melanoma"
+TAG = "27124452_Mouse_Melanoma"
+setwd(folder)
+mat_input = Broad_matrix_process("Matrix.txt",sep="\t")
+cluster = Broad_cluster_process("Cluster.txt",sep="\t")
+cluster = cluster[,c(1,2)]
+colnames(cluster) <- c('cell','celltype')
+Broad_create_seurat_obj(mat_input,cluster,file="27124452_Mouse_Melanoma_seurat_obj")
+
+
+Read_Seurat_file_in_the_folder_UCSC(folder)
+Prepare_Seurat_file_in_the_folder_UCSC(folder,norm="counts")
+Prepare_Seurat_file_in_the_folder_UCSC_STEP2(folder)
+Prepare_Seurat_file_in_the_folder_UCSC_STEP2_copy_folder(folder,to,TAG)
+
+##### Next !!!!
+
+folder = "/home/plyu3/cell_ann_part_datasets1/26727548_scRNA_Adult Mouse Visual Cortex"
+TAG = "26727548_Mouse_Visual"
+setwd(folder)
+mat_input = Broad_matrix_process("Matrix.txt",sep="\t")
+cluster = Broad_cluster_process("Cluster.txt",sep="\t")
+cluster = cluster[,c(1,2)]
+colnames(cluster) <- c('cell','celltype')
+Broad_create_seurat_obj(mat_input,cluster,file="26727548_Mouse_Visual_seurat_obj")
+
+Read_Seurat_file_in_the_folder_UCSC(folder)
+Prepare_Seurat_file_in_the_folder_UCSC(folder,norm="counts")
+Prepare_Seurat_file_in_the_folder_UCSC_STEP2(folder)
+Prepare_Seurat_file_in_the_folder_UCSC_STEP2_copy_folder(folder,to,TAG)
+
+##### ######### ################ ##########
+##### Next !!!!! don't need this !!!!! ####
+folder = "/home/plyu3/cell_ann_part_datasets1/26430063_scRNA_Mouse Aging HSCs"
+TAG = "26430063_Mouse_HSCs"
+setwd(folder)
+
+#####
+##### Next !!!!! ########
+#####
+
+folder = "/home/plyu3/cell_ann_part_datasets1/33777933_bone_marrow"
+TAG = "33777933_bone_marrow"
+setwd(folder)
+
+mat_input = Broad_matrix_process("counts.normalized.csv.gz",sep=",")
+cluster = Broad_cluster_process("metadata.csv",sep=",")
+
+tail(colnames(mat_input))
+tail(cluster)
+#####
+cluster = cluster[,c(1,4,2,3)]
+colnames(cluster) <- c('cell','celltype','dim1','dim2')
+Broad_create_seurat_obj(mat_input,cluster,file="26430063_Mouse_HSCs_seurat_obj")
+##### 
+Read_Seurat_file_in_the_folder_UCSC(folder)
+Prepare_Seurat_file_in_the_folder_UCSC(folder,norm="log")
+Prepare_Seurat_file_in_the_folder_UCSC_STEP2(folder)
+Prepare_Seurat_file_in_the_folder_UCSC_STEP2_copy_folder(folder,to,TAG)
+
+
+
+
+
+######
+folder = "/home/plyu3/cell_ann_part_datasets1/33619488_Human_Nasal_swabs"
+TAG = "33619488_Human_Nasal_swabs"
+setwd(folder)
+###### OK!! then we start !! ######
+
+file = "20210220_NasalSwab_RawCounts.txt"
+
+##### ADD A \T AT THE START OF THE MATRIX #######
+matrix = read_delim(file,delim="\t")
+
+mat_input = Broad_matrix_process("20210220_NasalSwab_NormCounts.txt",sep="\t")
+cluster = Broad_cluster_process("20210220_NasalSwab_UMAP.txt",sep="\t")
+
+cluster = cluster[,c(1,4,2,3)]
+colnames(cluster) <- c('cell','celltype','dim1','dim2')
+Broad_create_seurat_obj(mat_input,cluster,file="26430063_Mouse_HSCs_seurat_obj")
+
+Read_Seurat_file_in_the_folder_UCSC(folder)
+Prepare_Seurat_file_in_the_folder_UCSC(folder,norm="log")
+Prepare_Seurat_file_in_the_folder_UCSC_STEP2(folder)
+Prepare_Seurat_file_in_the_folder_UCSC_STEP2_copy_folder(folder,to,TAG)
+
+
+##### OK!!! next !!!! ######
+#####
+##### cd 31995762_total
+mkdir /home/plyu3/cell_ann_part_datasets1/31995762_total
+folder = "/home/plyu3/cell_ann_part_datasets1/31995762_total"
+setwd(folder)
+
+
+file = "PRJ0027145_ex.txt"
+mat_input = Broad_matrix_process("PRJ0027145_ex.txt",sep="\t")
+load('mat_input')
+
+cluster = Broad_cluster_process("PRJ0027145_meta.txt",sep="\t")
+table(cluster$Clusters_RPE)
+table(cluster$Cell_type_full)
+
+#### OK!!! let us use all first ######
+####
+
+dims = Broad_cluster_process("Clusters_full_tSNE.txt",sep=",")
+m = match(dims$Clusters_full,cluster$Clusters_full)
+dims$celltype = cluster$Cell_type_full[m]
+
+dims = dims[,c(1,5,2,3)]
+colnames(dims) <- c('cell','celltype','dim1','dim2')
+Broad_create_seurat_obj(mat_input,dims,file="31995762_total_seurat_obj")
+
+#### next: BC 
+dims = Broad_cluster_process("Clusters_bipolar_tSNE.txt",sep=",")
+m = match(dims$Clusters_bipolar,cluster$Clusters_bipolar)
+dims$celltype = cluster$Cell_type_bipolar[m]
+dims = dims[,c(1,5,2,3)]
+colnames(dims) <- c('cell','celltype','dim1','dim2')
+
+Broad_create_seurat_obj(mat_input,dims,file="31995762_BC_seurat_obj")
+
+#### next: AC
+dims = Broad_cluster_process("Clusters_amacrine_tSNE.txt",sep=",")
+m = match(dims$Clusters_amacrine,cluster$Clusters_amacrine)
+dims$celltype = cluster$Cell_type_amacrine[m]
+dims = dims[,c(1,5,2,3)]
+colnames(dims) <- c('cell','celltype','dim1','dim2')
+
+Broad_create_seurat_obj(mat_input,dims,file="31995762_AC_seurat_obj")
+
+
+#### RGC 
+####
+
+dims = Broad_cluster_process("Clusters_rgc_tSNE.txt",sep=",")
+m = match(dims$Clusters_rgc,cluster$Clusters_rgc)
+dims$celltype = cluster$Cell_type_rgc[m]
+dims = dims[,c(1,5,2,3)]
+colnames(dims) <- c('cell','celltype','dim1','dim2')
+
+Broad_create_seurat_obj(mat_input,dims,file="31995762_RGC_seurat_obj")
+
+#### HC
+dims = Broad_cluster_process("Clusters_horizontal_tSNE.txt",sep=",")
+m = match(dims$Clusters_horizontal,cluster$Clusters_horizontal)
+dims$celltype = cluster$Cell_type_horizontal[m]
+table(dims$celltype)
+dims = dims[,c(1,5,2,3)]
+colnames(dims) <- c('cell','celltype','dim1','dim2')
+head(dims)
+Broad_create_seurat_obj(mat_input,dims,file="31995762_HC_seurat_obj")
+
+
+#### Cone
+dims = Broad_cluster_process("Clusters_cones_tSNE.txt",sep=",")
+m = match(dims$Clusters_cones,cluster$Clusters_cones)
+dims$celltype = cluster$Cell_type_cones[m]
+table(dims$celltype)
+dims = dims[,c(1,5,2,3)]
+colnames(dims) <- c('cell','celltype','dim1','dim2')
+head(dims)
+Broad_create_seurat_obj(mat_input,dims,file="31995762_Cone_seurat_obj")
+
+#### 
+dims = Broad_cluster_process("Clusters_myeloid_tSNE.txt",sep=",")
+m = match(dims$Clusters_myeloid,cluster$Clusters_myeloid)
+dims$celltype = cluster$Cell_type_myeloid[m]
+table(dims$celltype)
+dims = dims[,c(1,5,2,3)]
+colnames(dims) <- c('cell','celltype','dim1','dim2')
+head(dims)
+Broad_create_seurat_obj(mat_input,dims,file="31995762_myeloid_seurat_obj")
+####
+#### OK!! create new folder !!! ####
+####
+mkdir /home/plyu3/cell_ann_part_datasets1/31995762_myeloid
+mkdir /home/plyu3/cell_ann_part_datasets1/31995762_Cone
+mkdir /home/plyu3/cell_ann_part_datasets1/31995762_HC
+mkdir /home/plyu3/cell_ann_part_datasets1/31995762_RGC
+mkdir /home/plyu3/cell_ann_part_datasets1/31995762_AC
+mkdir /home/plyu3/cell_ann_part_datasets1/31995762_BC
+
+cd /home/plyu3/cell_ann_part_datasets1/31995762_total
+mv 31995762_AC_seurat_obj  /home/plyu3/cell_ann_part_datasets1/31995762_AC/
+mv 31995762_BC_seurat_obj  /home/plyu3/cell_ann_part_datasets1/31995762_BC/
+mv 31995762_HC_seurat_obj  /home/plyu3/cell_ann_part_datasets1/31995762_HC/
+
+mv 31995762_myeloid_seurat_obj  /home/plyu3/cell_ann_part_datasets1/31995762_myeloid/
+mv 31995762_RGC_seurat_obj  /home/plyu3/cell_ann_part_datasets1/31995762_RGC/
+mv 31995762_Cone_seurat_obj  /home/plyu3/cell_ann_part_datasets1/31995762_Cone/
+
+#### 8 !!! ##
+
+folder = '/home/plyu3/cell_ann_part_datasets1/31995762_total'
+TAG = '31995762_total'
+Read_Seurat_file_in_the_folder_UCSC(folder)
+Prepare_Seurat_file_in_the_folder_UCSC(folder,norm="counts")
+Prepare_Seurat_file_in_the_folder_UCSC_STEP2(folder)
+Prepare_Seurat_file_in_the_folder_UCSC_STEP2_copy_folder(folder,to,TAG)
+
+folder = '/home/plyu3/cell_ann_part_datasets1/31995762_AC'
+TAG = '31995762_AC'
+Read_Seurat_file_in_the_folder_UCSC(folder)
+Prepare_Seurat_file_in_the_folder_UCSC(folder,norm="counts")
+Prepare_Seurat_file_in_the_folder_UCSC_STEP2(folder)
+Prepare_Seurat_file_in_the_folder_UCSC_STEP2_copy_folder(folder,to,TAG)
+
+folder = '/home/plyu3/cell_ann_part_datasets1/31995762_BC'
+TAG = '31995762_BC'
+Read_Seurat_file_in_the_folder_UCSC(folder)
+Prepare_Seurat_file_in_the_folder_UCSC(folder,norm="counts")
+Prepare_Seurat_file_in_the_folder_UCSC_STEP2(folder)
+Prepare_Seurat_file_in_the_folder_UCSC_STEP2_copy_folder(folder,to,TAG)
+
+folder = '/home/plyu3/cell_ann_part_datasets1/31995762_Cone'
+TAG = '31995762_Cone'
+Read_Seurat_file_in_the_folder_UCSC(folder)
+Prepare_Seurat_file_in_the_folder_UCSC(folder,norm="counts")
+Prepare_Seurat_file_in_the_folder_UCSC_STEP2(folder)
+Prepare_Seurat_file_in_the_folder_UCSC_STEP2_copy_folder(folder,to,TAG)
+
+
+folder = '/home/plyu3/cell_ann_part_datasets1/31995762_HC'
+TAG = '31995762_HC'
+Read_Seurat_file_in_the_folder_UCSC(folder)
+Prepare_Seurat_file_in_the_folder_UCSC(folder,norm="counts")
+Prepare_Seurat_file_in_the_folder_UCSC_STEP2(folder)
+Prepare_Seurat_file_in_the_folder_UCSC_STEP2_copy_folder(folder,to,TAG)
+
+
+folder = '/home/plyu3/cell_ann_part_datasets1/31995762_myeloid'
+TAG = '31995762_myeloid'
+Read_Seurat_file_in_the_folder_UCSC(folder)
+Prepare_Seurat_file_in_the_folder_UCSC(folder,norm="counts")
+Prepare_Seurat_file_in_the_folder_UCSC_STEP2(folder)
+Prepare_Seurat_file_in_the_folder_UCSC_STEP2_copy_folder(folder,to,TAG)
+
+folder = '/home/plyu3/cell_ann_part_datasets1/31995762_RGC'
+TAG = '31995762_RGC'
+Read_Seurat_file_in_the_folder_UCSC(folder)
+Prepare_Seurat_file_in_the_folder_UCSC(folder,norm="counts")
+Prepare_Seurat_file_in_the_folder_UCSC_STEP2(folder)
+Prepare_Seurat_file_in_the_folder_UCSC_STEP2_copy_folder(folder,to,TAG)
+
+
+####
+#### OK!!! next !!!! ########
+Cell Atlas of The Human Fovea and Peripheral Retina
+mkdir 32555229_Human_Fovea_Peripheral
+
+folder = "/home/plyu3/cell_ann_part_datasets1/32555229_Human_Fovea_Peripheral"
+TAG = "32555229_Human_Fovea_Peripheral"
+setwd(folder)
+
+mat_input = Broad_matrix_process("Human_retina_combined_all_expression_matrix.csv",sep=",")
+cluster = Broad_cluster_process("Human_retina_combined_all_meta.csv",sep=",")
+
+####
+
+tail(colnames(mat_input))
+tail(cluster)
+#####
+cluster = cluster[,c(1,2)]
+colnames(cluster) <- c('cell','celltype')
+Broad_create_seurat_obj(mat_input,cluster,file="32555229_Human_Fovea_Peripheral_seurat_obj")
+##### 
+Read_Seurat_file_in_the_folder_UCSC(folder)
+Prepare_Seurat_file_in_the_folder_UCSC(folder,norm="log")
+Prepare_Seurat_file_in_the_folder_UCSC_STEP2(folder)
+Prepare_Seurat_file_in_the_folder_UCSC_STEP2_copy_folder(folder,to,TAG)
+
+
+
+
+
+#### OK!!! next !!!! ########
+#### Single-Cell Analysis of Human Retina Identifies Evolutionarily Conserved and Species-Specific Mechanisms Controlling Development
+Single cell RNA sequencing of human liver reveals distinct intrahepatic macrophage populations
+mkdir 30348985_human_liver
+
+
+folder = "/home/plyu3/cell_ann_part_datasets1/30348985_human_liver"
+TAG = "30348985_human_liver"
+setwd(folder)
+
+mat_input = Broad_matrix_process("GSE115469_Data.csv",sep=",")
+cluster = Broad_cluster_process("GSE115469_CellClusterType.txt",sep="\t")
+
+tail(colnames(mat_input))
+tail(cluster)
+#####
+cluster = cluster[,c(1,5)]
+#colnames(cluster) <- c('cell','celltype','dim1','dim2')
+colnames(cluster) <- c('cell','celltype')
+
+Broad_create_seurat_obj(mat_input,cluster,file="30348985_human_liver_seurat_obj")
+##### 
+Read_Seurat_file_in_the_folder_UCSC(folder)
+Prepare_Seurat_file_in_the_folder_UCSC(folder,norm="log2")
+Prepare_Seurat_file_in_the_folder_UCSC_STEP2(folder)
+Prepare_Seurat_file_in_the_folder_UCSC_STEP2_copy_folder(folder,to,TAG)
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+####
+#### OK!!! next !!!! ########
+#### 
+A human liver cell atlas reveals heterogeneity and epithelial progenitors
+PMID: 31292543
+
+nohup curl -o local.rds "https://corpora-data-prod.s3.amazonaws.com/0b139068-19fc-4b70-a235-dcd0bdbb11e9/local.rds?AWSAccessKeyId=ASIATLYQ5N5XY3VU2LUX&Signature=AxfAr7I8bj%2Fx8zZW3MK8vGy3ESU%3D&x-amz-security-token=IQoJb3JpZ2luX2VjEAoaCXVzLXdlc3QtMiJHMEUCIHgUBB9E7GN5RcPdojPIAbgdBfqxwnYkoGvnQ0Q0eEXNAiEA4fp1xv0up2DSf3sKLjEeopyRv1s%2Ft4jbAPVInpOEvMwq9AMIg%2F%2F%2F%2F%2F%2F%2F%2F%2F%2F%2FARABGgwyMzE0MjY4NDY1NzUiDELRTonoTbDsCL6jfCrIAxQbD57FnPco2vffrlf32kb6Uk3zMzn5sg%2B0LIR1v4t3GpTRbRORGkhhUJgdlEcjAi0K3IyXuSgon%2BIw16qI3UlcGnEpfM384%2B2SPHG5e3Lt30HEZPrLZnbUk4gV%2BhmsrCzqnTtqsJsYL17B5ye8mwYUTwqznllGPUspbA5gRw8CRCUpW2V%2FsU%2Be0Pj71DnbUF4lgUAD5pt3JSP%2F%2Fl6MtMX9fklfkh8hWigi6vltmue%2F4ztzDltIQB1kXGx%2FituN1zAhjYtMuI5tQLIc9Vc7B1tdTiEq5WYIt0TYeB%2BTVSbdoBdWooRu5YToa%2BG9zrTtbiC3fK8Zq5jhSJUEsaMIuU7X2EyMqJpGz1lBmqnkS%2B7jewqSdmY4PU085DMjdoF0eBtNQvTix5HOwKdLv8uY8KOJ6MKDoimyNgg3Nu11DxdOoOCDYCf7IYpjkERgaUCaXkUjXQ1FFyo64eIW0UWh6%2B8trMKT2v%2B6aLkFcUDeC%2FC3%2FcZW5CUfcUcUZSu32TzPB7lH9jaKm61Xq16%2FoS1BMyn20crB%2F8hC%2B4b11URC6tOsE%2FcmfuRZlCCrjOCpF5bnxt7PwyN4wi%2BFzHxq73RlKowovPZYc9z2BTDIw9yeBjqlATxT0CCJaxBZ8hLAuPfXLK6w%2Bud1B%2BwQsIJrT8hL%2B23UqE5FKqqtEZ5RxpDH77xZhRDlkFOlofAMOElK6Jzkbw6PEvHNimxAiBZScs8NDLAp1veCYJ9wJ5tf2s4j1g8tkRGbxVHjFS7BE8wX7Vl4%2FJI2dUOxrUk0Fb%2FP5wUDIWl5QdLPvcVPDjH7MKMfYNuIsiuEB5GCUH%2BZzFhE1%2BUNwuojF0JFzQ%3D%3D&Expires=1675649827" &
+
+#### OK!!! next !!!! ##########
+Mapping the developing human immune system across organs
+PMID: 35549310
+
+mkdir 35549310_human_immune_system
+cd 35549310_human_immune_system
+nohup curl -o local.rds "https://corpora-data-prod.s3.amazonaws.com/a7a1aa72-a6ea-4044-9e50-c32b0ca5cbb6/local.rds?AWSAccessKeyId=ASIATLYQ5N5XY3VU2LUX&Signature=EUcEZvDuxrmQo10D3L%2BEMVveBC0%3D&x-amz-security-token=IQoJb3JpZ2luX2VjEAoaCXVzLXdlc3QtMiJHMEUCIHgUBB9E7GN5RcPdojPIAbgdBfqxwnYkoGvnQ0Q0eEXNAiEA4fp1xv0up2DSf3sKLjEeopyRv1s%2Ft4jbAPVInpOEvMwq9AMIg%2F%2F%2F%2F%2F%2F%2F%2F%2F%2F%2FARABGgwyMzE0MjY4NDY1NzUiDELRTonoTbDsCL6jfCrIAxQbD57FnPco2vffrlf32kb6Uk3zMzn5sg%2B0LIR1v4t3GpTRbRORGkhhUJgdlEcjAi0K3IyXuSgon%2BIw16qI3UlcGnEpfM384%2B2SPHG5e3Lt30HEZPrLZnbUk4gV%2BhmsrCzqnTtqsJsYL17B5ye8mwYUTwqznllGPUspbA5gRw8CRCUpW2V%2FsU%2Be0Pj71DnbUF4lgUAD5pt3JSP%2F%2Fl6MtMX9fklfkh8hWigi6vltmue%2F4ztzDltIQB1kXGx%2FituN1zAhjYtMuI5tQLIc9Vc7B1tdTiEq5WYIt0TYeB%2BTVSbdoBdWooRu5YToa%2BG9zrTtbiC3fK8Zq5jhSJUEsaMIuU7X2EyMqJpGz1lBmqnkS%2B7jewqSdmY4PU085DMjdoF0eBtNQvTix5HOwKdLv8uY8KOJ6MKDoimyNgg3Nu11DxdOoOCDYCf7IYpjkERgaUCaXkUjXQ1FFyo64eIW0UWh6%2B8trMKT2v%2B6aLkFcUDeC%2FC3%2FcZW5CUfcUcUZSu32TzPB7lH9jaKm61Xq16%2FoS1BMyn20crB%2F8hC%2B4b11URC6tOsE%2FcmfuRZlCCrjOCpF5bnxt7PwyN4wi%2BFzHxq73RlKowovPZYc9z2BTDIw9yeBjqlATxT0CCJaxBZ8hLAuPfXLK6w%2Bud1B%2BwQsIJrT8hL%2B23UqE5FKqqtEZ5RxpDH77xZhRDlkFOlofAMOElK6Jzkbw6PEvHNimxAiBZScs8NDLAp1veCYJ9wJ5tf2s4j1g8tkRGbxVHjFS7BE8wX7Vl4%2FJI2dUOxrUk0Fb%2FP5wUDIWl5QdLPvcVPDjH7MKMfYNuIsiuEB5GCUH%2BZzFhE1%2BUNwuojF0JFzQ%3D%3D&Expires=1675650212" &
+
+#### OK!!! next !!!! ##########
+
+
+
+
+
+#### OK!!! next !!!! #######
+####
+A cell atlas of human thymic development defines T cell repertoire formation
+PMID: 32079746
+
+mkdir 32079746_human_thymic
+cd 32079746_human_thymic
+curl -o local.rds "https://corpora-data-prod.s3.amazonaws.com/0b139068-19fc-4b70-a235-dcd0bdbb11e9/local.rds?AWSAccessKeyId=ASIATLYQ5N5XWRWFR6PE&Signature=0NY7CJt2XfXpDR4McPoJJKtwIuo%3D&x-amz-security-token=IQoJb3JpZ2luX2VjEAoaCXVzLXdlc3QtMiJGMEQCIECHA981gvQycoTP%2BN9ttLpE67HayMM6H1ZwKTk92yMZAiBlO3hwsHDno8gVAUej%2BBY1%2BfaLpgxgy%2FwClh5Q6tkCQCr0AwiD%2F%2F%2F%2F%2F%2F%2F%2F%2F%2F8BEAEaDDIzMTQyNjg0NjU3NSIMyT7T7fGtwfLcz880KsgDowIxOonbHl81qDlGlINZArD1gAMjCPjqIRE5fats4rhwZeI175lSdTI1pDR5EtciJYikcLPg09h%2BRJPOX9amQ3r2V%2BGd%2FmXj8YBU5XzKbie2JHCGELcxysznKmmIcXvmuRcGaOG1MY22Y%2Btj5Zsv5Hw%2Bx%2B4gU5XIxo5VKTOWctjgXMdiTIgeIyWbIUIocqTY%2BHt8mcNpt3AXX96K0ktCsno6DjWjXE%2Ff2IFyj5jtYRnhrlH%2FYb9NGKehjuMhZz0QruCfARY4hztzkMmghlk%2Fjvexhh8DvuXNU2Os2r4jMOC3nigiuUMc9schprxfW1l72pARm%2FqLy0%2FIb4NLQppD6n%2F3CUTcytvS%2Bsj9416c3rtXlAnKuzet9Hr6B%2F3nPghMfY1qsKcRAsYMMdDFgL%2BFznUfrkuUkqDdkZDDxOTR%2B923jGpBfMaIlOuXZWfUti6v7PIL8G89m7OWOAXQzJH%2FiuPoGbxTSTYJkUfUpBJ0B3QClM1KC3ddBL4jxkt%2Fgpg%2FXPfz9d6rZWvDMQQFtWV5a2glFdnFLSZz4hq0dYnw4yGzaHwDgJNwNORTaQ%2F23VsW9Y1LoH6QqaHmxpPK%2FFu7zLj2DbtxXU0wML653J4GOqYBH%2BMFTlI5E%2FCWF2hwYiM9arFzDW513HwTYD4qWCswogZ05db6I4KZXW%2BH0Wz6%2BbNwq21ON5EF%2FP0ENyhskUzC4FpsqmGIMQ6jLgYZelpgxIcsGXuFjotMXSBnDPOwoQuRVgJHy33n4DHIDSbJTl5Fu7b%2BZqVSknJ68ftMhLAHB8eJTXKnz32yOBFpzilKHSrovr0CofVl5Ncyvwl1uLAurCRNvFHcBQ%3D%3D&Expires=1675649670"
+
+
+
+
+
+
+
+
+####
+####
+#### OK!!! then we will found the next thing ########
+####
+
+
+scp -r /zp1/data/yzhai11/UCSC plyu3@omb2.onc.jhmi.edu:/zp1/data/plyu3/UCSC_old
+
+mkdir /zp1/data/plyu3/CellAnn_batch6/
+
+conda activate seurat4
+
+to = "/zp1/data/plyu3/CellAnn_batch6/"
+
+source("/zp1/data/plyu3/UCSC/Prepare_CellAnn_DB_final_source.R")
+source("/zp1/data/plyu3/UCSC/Prepare_CellAnn_DB_final_add1.R")
+
+setwd('/zp1/data/plyu3/UCSC_old')
+
+##### No.1 #####
+#####
+to = "/zp1/data/plyu3/CellAnn_batch6/"
+
+##### ################## #####
+
+##### red ######
+##### red ######
+
+
+folder = "/zp1/data/plyu3/UCSC_old/pmid23193282Cortex"
+TAG = "23193282Cortex_Human"
+
+##### ################## #####
+Read_Seurat_file_in_the_folder_UCSC(folder)
+#####
+Prepare_Seurat_file_in_the_folder_UCSC(folder,norm="counts")
+Prepare_Seurat_file_in_the_folder_UCSC_STEP2(folder)
+Prepare_Seurat_file_in_the_folder_UCSC_STEP2_copy_folder(folder,to,TAG)
+
+#####
+##### red ######
+#####
+
+folder = "/zp1/data/plyu3/UCSC_old/pmid23193282Motor"
+TAG = "23193282Motor"
+
+Read_Seurat_file_in_the_folder_UCSC(folder)
+Prepare_Seurat_file_in_the_folder_UCSC(folder,norm="counts")
+Prepare_Seurat_file_in_the_folder_UCSC_STEP2(folder)
+Prepare_Seurat_file_in_the_folder_UCSC_STEP2_copy_folder(folder,to,TAG)
+
+##################
+##### red ######
+##################
+
+folder = "/zp1/data/plyu3/UCSC_old/pmid28965763"
+TAG = "28965763_Human_Pancreas"
+
+input_folder = folder
+Read_Seurat_file_in_the_folder_UCSC(folder)
+Prepare_Seurat_file_in_the_folder_UCSC(folder,norm="log2")
+Prepare_Seurat_file_in_the_folder_UCSC_STEP2(folder)
+Prepare_Seurat_file_in_the_folder_UCSC_STEP2_copy_folder(folder,to,TAG)
+
+
+
+#### red #####
+
+
+
+folder = "/zp1/data/plyu3/UCSC_old/pmid30315278"
+TAG = "28965763_Human_testis"
+
+input_folder = folder
+Read_Seurat_file_in_the_folder_UCSC(folder)
+Prepare_Seurat_file_in_the_folder_UCSC(folder,norm="log")
+Prepare_Seurat_file_in_the_folder_UCSC_STEP2(folder)
+Prepare_Seurat_file_in_the_folder_UCSC_STEP2_copy_folder(folder,to,TAG)
+
+
+#### red #####
+
+folder = "/zp1/data/plyu3/UCSC_old/pmid30348985"
+TAG = "30348985_Human_Liver"
+
+input_folder = folder
+Read_Seurat_file_in_the_folder_UCSC(folder)
+Prepare_Seurat_file_in_the_folder_UCSC(folder,norm="log2")
+Prepare_Seurat_file_in_the_folder_UCSC_STEP2(folder)
+Prepare_Seurat_file_in_the_folder_UCSC_STEP2_copy_folder(folder,to,TAG)
+
+
+#### red #####
+
+folder = "/zp1/data/plyu3/UCSC_old/pmid30355494"
+TAG = "30355494_Human_Skin"
+
+input_folder = folder
+Read_Seurat_file_in_the_folder_UCSC(folder)
+Prepare_Seurat_file_in_the_folder_UCSC(folder,norm="log")
+Prepare_Seurat_file_in_the_folder_UCSC_STEP2(folder)
+Prepare_Seurat_file_in_the_folder_UCSC_STEP2_copy_folder(folder,to,TAG)
+
+
+#### red #####
+
+folder = "/zp1/data/plyu3/UCSC_old/pmid30429548"
+TAG = "30355494_Human_Reproductive_system"
+
+input_folder = folder
+Read_Seurat_file_in_the_folder_UCSC(folder)
+Prepare_Seurat_file_in_the_folder_UCSC(folder,norm="counts")
+Prepare_Seurat_file_in_the_folder_UCSC_STEP2(folder)
+Prepare_Seurat_file_in_the_folder_UCSC_STEP2_copy_folder(folder,to,TAG)
+
+
+#### red #####
+
+folder = "/zp1/data/plyu3/UCSC_old/pmid30566875"
+TAG = "30566875_Human_Prostate"
+
+input_folder = folder
+Read_Seurat_file_in_the_folder_UCSC(folder)
+Prepare_Seurat_file_in_the_folder_UCSC(folder,norm="log")
+Prepare_Seurat_file_in_the_folder_UCSC_STEP2(folder)
+
+Prepare_Seurat_file_in_the_folder_UCSC_STEP2_copy_folder(folder,to,TAG)
+
+#####
+##### ####### ######
+##### 4 #####
+#####
+
+folder = "/zp1/data/plyu3/UCSC_old/pmid30726734"
+TAG = "30726734_Human_testis"
+#####
+##### # #####
+#####
+
+input_folder = folder
+Read_Seurat_file_in_the_folder_UCSC(folder)
+Prepare_Seurat_file_in_the_folder_UCSC(folder,norm="counts")
+Prepare_Seurat_file_in_the_folder_UCSC_STEP2(folder)
+Prepare_Seurat_file_in_the_folder_UCSC_STEP2_copy_folder(folder,to,TAG)
+
+#### 1 ######
+folder = "/zp1/data/plyu3/UCSC_old/pmid30747918"
+TAG = "30747918_Human_white_matter"
+
+Read_Seurat_file_in_the_folder_UCSC(folder)
+Prepare_Seurat_file_in_the_folder_UCSC(folder,norm="counts")
+Prepare_Seurat_file_in_the_folder_UCSC_STEP2(folder)
+Prepare_Seurat_file_in_the_folder_UCSC_STEP2_copy_folder(folder,to,TAG)
+
+#### 3 ######
+folder = "/zp1/data/plyu3/UCSC_old/pmid31075224"
+TAG = "31075224_Human_eye"
+
+Read_Seurat_file_in_the_folder_UCSC(folder)
+Prepare_Seurat_file_in_the_folder_UCSC(folder,norm="log")
+Prepare_Seurat_file_in_the_folder_UCSC_STEP2(folder)
+Prepare_Seurat_file_in_the_folder_UCSC_STEP2_copy_folder(folder,to,TAG)
+
+
+#### 4 ######
+
+folder = "/zp1/data/plyu3/UCSC_old/pmid31209336bronchi"
+TAG = "31075224_Human_Lung_bronchi"
+
+setwd(folder)
+
+Read_Seurat_file_in_the_folder_UCSC(folder)
+Prepare_Seurat_file_in_the_folder_UCSC(folder,norm="log")
+Prepare_Seurat_file_in_the_folder_UCSC_STEP2(folder)
+Prepare_Seurat_file_in_the_folder_UCSC_STEP2_copy_folder(folder,to,TAG)
+
+
+##### 1 #####
+
+
+folder = "/zp1/data/plyu3/UCSC_old/pmid31209336epithelial"
+TAG = "31075224_Human_Lung_epithelial"
+Read_Seurat_file_in_the_folder_UCSC(folder)
+Prepare_Seurat_file_in_the_folder_UCSC(folder,norm="log")
+Prepare_Seurat_file_in_the_folder_UCSC_STEP2(folder)
+Prepare_Seurat_file_in_the_folder_UCSC_STEP2_copy_folder(folder,to,TAG)
+
+
+##### 3 #####
+
+
+folder = "/zp1/data/plyu3/UCSC_old/pmid31209336nasal"
+TAG = "31075224_Human_Lung_nasal"
+Read_Seurat_file_in_the_folder_UCSC(folder)
+Prepare_Seurat_file_in_the_folder_UCSC(folder,norm="log")
+Prepare_Seurat_file_in_the_folder_UCSC_STEP2(folder)
+Prepare_Seurat_file_in_the_folder_UCSC_STEP2_copy_folder(folder,to,TAG)
+
+##### 4 #####
+
+folder = "/zp1/data/plyu3/UCSC_old/pmid31209336parenchyma"
+TAG = "31075224_Human_Lung_parenchyma"
+Read_Seurat_file_in_the_folder_UCSC(folder)
+Prepare_Seurat_file_in_the_folder_UCSC(folder,norm="log")
+Prepare_Seurat_file_in_the_folder_UCSC_STEP2(folder)
+Prepare_Seurat_file_in_the_folder_UCSC_STEP2_copy_folder(folder,to,TAG)
+
+
+##### 3 ######
+
+
+folder = "/zp1/data/plyu3/UCSC_old/pmid31316211"
+TAG = "31075224_Human_Brain"
+Read_Seurat_file_in_the_folder_UCSC(folder)
+Prepare_Seurat_file_in_the_folder_UCSC(folder,norm="log2")
+Prepare_Seurat_file_in_the_folder_UCSC_STEP2(folder)
+Prepare_Seurat_file_in_the_folder_UCSC_STEP2_copy_folder(folder,to,TAG)
+
+
+##### 4 ##
+
+folder = "/zp1/data/plyu3/UCSC_old/pmid31341279"
+TAG = "31341279_Mouse_Heart"
+Read_Seurat_file_in_the_folder_UCSC(folder)
+Prepare_Seurat_file_in_the_folder_UCSC(folder,norm="log2")
+Prepare_Seurat_file_in_the_folder_UCSC_STEP2(folder)
+Prepare_Seurat_file_in_the_folder_UCSC_STEP2_copy_folder(folder,to,TAG)
+
+#### 1 ###
+
+folder = "/zp1/data/plyu3/UCSC_old/pmid31436334"
+TAG = "31436334_Human_eye"
+Read_Seurat_file_in_the_folder_UCSC(folder)
+Prepare_Seurat_file_in_the_folder_UCSC(folder,norm="counts")
+Prepare_Seurat_file_in_the_folder_UCSC_STEP2(folder)
+Prepare_Seurat_file_in_the_folder_UCSC_STEP2_copy_folder(folder,to,TAG)
+
+#### 5 ###
+
+
+folder = "/zp1/data/plyu3/UCSC_old/pmid31474370"
+TAG = "31474370_Human_Intestine"
+Read_Seurat_file_in_the_folder_UCSC(folder)
+Prepare_Seurat_file_in_the_folder_UCSC(folder,norm="log")
+Prepare_Seurat_file_in_the_folder_UCSC_STEP2(folder)
+Prepare_Seurat_file_in_the_folder_UCSC_STEP2_copy_folder(folder,to,TAG)
+
+#### 4 ####
+
+folder = "/zp1/data/plyu3/UCSC_old/pmid31604275Fetal"
+TAG = "31604275_Human_Fetal_kidney"
+Read_Seurat_file_in_the_folder_UCSC(folder)
+Prepare_Seurat_file_in_the_folder_UCSC(folder,norm="log")
+Prepare_Seurat_file_in_the_folder_UCSC_STEP2(folder)
+Prepare_Seurat_file_in_the_folder_UCSC_STEP2_copy_folder(folder,to,TAG)
+
+#### 1 ####
+
+folder = "/zp1/data/plyu3/UCSC_old/pmid31604275Mature"
+TAG = "31604275_Human_Mature_kidney"
+Read_Seurat_file_in_the_folder_UCSC(folder)
+Prepare_Seurat_file_in_the_folder_UCSC(folder,norm="log")
+Prepare_Seurat_file_in_the_folder_UCSC_STEP2(folder)
+Prepare_Seurat_file_in_the_folder_UCSC_STEP2_copy_folder(folder,to,TAG)
+
+#### 6 #####
+
+folder = "/zp1/data/plyu3/UCSC_old/pmid31712411"
+TAG = "31712411_Human_Eye"
+Read_Seurat_file_in_the_folder_UCSC(folder)
+Prepare_Seurat_file_in_the_folder_UCSC(folder,norm="log")
+Prepare_Seurat_file_in_the_folder_UCSC_STEP2(folder)
+Prepare_Seurat_file_in_the_folder_UCSC_STEP2_copy_folder(folder,to,TAG)
+
+
+#### 5 ######
+folder = "/zp1/data/plyu3/UCSC_old/pmid31753849Colon"
+TAG = "31753849Colon"
+Read_Seurat_file_in_the_folder_UCSC(folder)
+Prepare_Seurat_file_in_the_folder_UCSC(folder,norm="log")
+Prepare_Seurat_file_in_the_folder_UCSC_STEP2(folder)
+Prepare_Seurat_file_in_the_folder_UCSC_STEP2_copy_folder(folder,to,TAG)
+
+#### 5 ####
+folder = "/zp1/data/plyu3/UCSC_old/pmid31753849Ileum"
+TAG = "31753849Ileum"
+Read_Seurat_file_in_the_folder_UCSC(folder)
+Prepare_Seurat_file_in_the_folder_UCSC(folder,norm="log")
+Prepare_Seurat_file_in_the_folder_UCSC_STEP2(folder)
+Prepare_Seurat_file_in_the_folder_UCSC_STEP2_copy_folder(folder,to,TAG)
+
+#### 5 ###
+folder = "/zp1/data/plyu3/UCSC_old/pmid31753849Rectum"
+TAG = "31753849Rectum"
+Read_Seurat_file_in_the_folder_UCSC(folder)
+Prepare_Seurat_file_in_the_folder_UCSC(folder,norm="log")
+Prepare_Seurat_file_in_the_folder_UCSC_STEP2(folder)
+Prepare_Seurat_file_in_the_folder_UCSC_STEP2_copy_folder(folder,to,TAG)
+
+#### 1 ###
+folder = "/zp1/data/plyu3/UCSC_old/pmid32066951"
+TAG = "32066951_Human_Intestine"
+Read_Seurat_file_in_the_folder_UCSC(folder)
+Prepare_Seurat_file_in_the_folder_UCSC(folder,norm="log")
+Prepare_Seurat_file_in_the_folder_UCSC_STEP2(folder)
+Prepare_Seurat_file_in_the_folder_UCSC_STEP2_copy_folder(folder,to,TAG)
+
+
+#### 2 ###
+folder = "/zp1/data/plyu3/UCSC_old/pmid32109386"
+TAG = "32109386_Human_Lung"
+Read_Seurat_file_in_the_folder_UCSC(folder)
+Prepare_Seurat_file_in_the_folder_UCSC(folder,norm="log")
+Prepare_Seurat_file_in_the_folder_UCSC_STEP2(folder)
+Prepare_Seurat_file_in_the_folder_UCSC_STEP2_copy_folder(folder,to,TAG)
+
+### 3 ###
+
+folder = "/zp1/data/plyu3/UCSC_old/pmid32123174"
+TAG = "32123174_Human_ovarian"
+
+Read_Seurat_file_in_the_folder_UCSC(folder)
+Prepare_Seurat_file_in_the_folder_UCSC(folder,norm="counts")
+Prepare_Seurat_file_in_the_folder_UCSC_STEP2(folder)
+Prepare_Seurat_file_in_the_folder_UCSC_STEP2_copy_folder(folder,to,TAG)
+
+### 4 ###
+folder = "/zp1/data/plyu3/UCSC_old/pmid32327715"
+TAG = "32327715_Human_skin"
+Read_Seurat_file_in_the_folder_UCSC(folder)
+Prepare_Seurat_file_in_the_folder_UCSC(folder,norm="counts")
+Prepare_Seurat_file_in_the_folder_UCSC_STEP2(folder)
+Prepare_Seurat_file_in_the_folder_UCSC_STEP2_copy_folder(folder,to,TAG)
+
+#########
+### 1 ###
+#########
+folder = "/zp1/data/plyu3/UCSC_old/pmid32396864Adult"
+TAG = "32396864_Human_Muscle"
+Read_Seurat_file_in_the_folder_UCSC(folder)
+Prepare_Seurat_file_in_the_folder_UCSC(folder,norm="counts")
+Prepare_Seurat_file_in_the_folder_UCSC_STEP2(folder)
+Prepare_Seurat_file_in_the_folder_UCSC_STEP2_copy_folder(folder,to,TAG)
+
+#########
+#########
+### 2 ###
+#########
+
+folder = "/zp1/data/plyu3/UCSC_old/pmid32396864Embryonic"
+TAG = "32396864_Human_Embryonic_Hindlimb_Muscle"
+Read_Seurat_file_in_the_folder_UCSC(folder)
+Prepare_Seurat_file_in_the_folder_UCSC(folder,norm="counts")
+Prepare_Seurat_file_in_the_folder_UCSC_STEP2(folder)
+Prepare_Seurat_file_in_the_folder_UCSC_STEP2_copy_folder(folder,to,TAG)
+
+
+##########
+### 1 ####
+##########
+
+folder = "/zp1/data/plyu3/UCSC_old/pmid32396864Fetal"
+TAG = "32396864_Human_Fetal_Hindlimb_Muscle"
+Read_Seurat_file_in_the_folder_UCSC(folder)
+Prepare_Seurat_file_in_the_folder_UCSC(folder,norm="counts")
+Prepare_Seurat_file_in_the_folder_UCSC_STEP2(folder)
+Prepare_Seurat_file_in_the_folder_UCSC_STEP2_copy_folder(folder,to,TAG)
+
+
+#### 2 ###
+folder = "/zp1/data/plyu3/UCSC_old/pmid32396864Juvenile"
+TAG = "32396864_Human_Juvenile_Hindlimb_Muscle"
+Read_Seurat_file_in_the_folder_UCSC(folder)
+Prepare_Seurat_file_in_the_folder_UCSC(folder,norm="counts")
+Prepare_Seurat_file_in_the_folder_UCSC_STEP2(folder)
+Prepare_Seurat_file_in_the_folder_UCSC_STEP2_copy_folder(folder,to,TAG)
+
+
+#### 3 ###
+folder = "/zp1/data/plyu3/UCSC_old/pmid32499656"
+TAG = "32499656_human_blood"
+Read_Seurat_file_in_the_folder_UCSC(folder)
+Prepare_Seurat_file_in_the_folder_UCSC(folder,norm="counts")
+Prepare_Seurat_file_in_the_folder_UCSC_STEP2(folder)
+Prepare_Seurat_file_in_the_folder_UCSC_STEP2_copy_folder(folder,to,TAG)
+
+#### 4 ###
+folder = "/zp1/data/plyu3/UCSC_old/pmid32514174"
+TAG = "32514174_human_PBMC"
+Read_Seurat_file_in_the_folder_UCSC(folder)
+Prepare_Seurat_file_in_the_folder_UCSC(folder,norm="log")
+Prepare_Seurat_file_in_the_folder_UCSC_STEP2(folder)
+Prepare_Seurat_file_in_the_folder_UCSC_STEP2_copy_folder(folder,to,TAG)
+
+#### 5 ####
+folder = "/zp1/data/plyu3/UCSC_old/pmid32527923"
+TAG = "32527923_human_Brain"
+Read_Seurat_file_in_the_folder_UCSC(folder)
+Prepare_Seurat_file_in_the_folder_UCSC(folder,norm="counts")
+Prepare_Seurat_file_in_the_folder_UCSC_STEP2(folder)
+Prepare_Seurat_file_in_the_folder_UCSC_STEP2_copy_folder(folder,to,TAG)
+
+#### 1 ######
+folder = "/zp1/data/plyu3/UCSC_old/pmid32624006"
+TAG = "32624006_human_Muscle"
+Read_Seurat_file_in_the_folder_UCSC(folder)
+Prepare_Seurat_file_in_the_folder_UCSC(folder,norm="counts")
+Prepare_Seurat_file_in_the_folder_UCSC_STEP2(folder)
+Prepare_Seurat_file_in_the_folder_UCSC_STEP2_copy_folder(folder,to,TAG)
+
+
+#### 2 ####
+folder = "/zp1/data/plyu3/UCSC_old/pmid32651212"
+TAG = "32651212_Human_Blood"
+Read_Seurat_file_in_the_folder_UCSC(folder)
+Prepare_Seurat_file_in_the_folder_UCSC(folder,norm="log2")
+Prepare_Seurat_file_in_the_folder_UCSC_STEP2(folder)
+Prepare_Seurat_file_in_the_folder_UCSC_STEP2_copy_folder(folder,to,TAG)
+
+
+#### 3 ####
+
+folder = "/zp1/data/plyu3/UCSC_old/pmid32728211"
+TAG = "32728211_Mouse_skin"
+Read_Seurat_file_in_the_folder_UCSC(folder)
+Prepare_Seurat_file_in_the_folder_UCSC(folder,norm="log")
+Prepare_Seurat_file_in_the_folder_UCSC_STEP2(folder)
+Prepare_Seurat_file_in_the_folder_UCSC_STEP2_copy_folder(folder,to,TAG)
+
+
+#### 3 ####
+
+folder = "/zp1/data/plyu3/UCSC_old/pmid32887883"
+TAG = "32887883_Mouse_Brain"
+Read_Seurat_file_in_the_folder_UCSC(folder)
+Prepare_Seurat_file_in_the_folder_UCSC(folder,norm="log")
+Prepare_Seurat_file_in_the_folder_UCSC_STEP2(folder)
+Prepare_Seurat_file_in_the_folder_UCSC_STEP2_copy_folder(folder,to,TAG)
+
+#### 1 #####
+
+folder = "/zp1/data/plyu3/UCSC_old/pmid33321047ASE"
+TAG = "33321047ASE"
+Read_Seurat_file_in_the_folder_UCSC(folder)
+Prepare_Seurat_file_in_the_folder_UCSC(folder,norm="counts")
+Prepare_Seurat_file_in_the_folder_UCSC_STEP2(folder)
+Prepare_Seurat_file_in_the_folder_UCSC_STEP2_copy_folder(folder,to,TAG)
+
+
+#### 4 ######
+folder = "/zp1/data/plyu3/UCSC_old/pmid33321047ASE"
+TAG = "33321047SLAE"
+Read_Seurat_file_in_the_folder_UCSC(folder)
+Prepare_Seurat_file_in_the_folder_UCSC(folder,norm="counts")
+Prepare_Seurat_file_in_the_folder_UCSC_STEP2(folder)
+Prepare_Seurat_file_in_the_folder_UCSC_STEP2_copy_folder(folder,to,TAG)
+
+
+
+#### 5 ###
+folder = "/zp1/data/plyu3/UCSC_old/pmid33448928"
+TAG = "33448928_Mouse_Kidney"
+Read_Seurat_file_in_the_folder_UCSC(folder)
+Prepare_Seurat_file_in_the_folder_UCSC(folder,norm="log")
+Prepare_Seurat_file_in_the_folder_UCSC_STEP2(folder)
+Prepare_Seurat_file_in_the_folder_UCSC_STEP2_copy_folder(folder,to,TAG)
+
+
+#### 1 #####
+folder = "/zp1/data/plyu3/UCSC_old/pmid33730024"
+TAG = "33730024_Human_airway"
+Read_Seurat_file_in_the_folder_UCSC(folder)
+Prepare_Seurat_file_in_the_folder_UCSC(folder,norm="counts")
+Prepare_Seurat_file_in_the_folder_UCSC_STEP2(folder)
+Prepare_Seurat_file_in_the_folder_UCSC_STEP2_copy_folder(folder,to,TAG)
+
+#### 4 #####
+
+folder = "/zp1/data/plyu3/UCSC_old/pmid33850129"
+TAG = "33850129_Human_kidney"
+Read_Seurat_file_in_the_folder_UCSC(folder)
+Prepare_Seurat_file_in_the_folder_UCSC(folder,norm="counts")
+Prepare_Seurat_file_in_the_folder_UCSC_STEP2(folder)
+Prepare_Seurat_file_in_the_folder_UCSC_STEP2_copy_folder(folder,to,TAG)
+
+### 5 #####
+folder = "/zp1/data/plyu3/UCSC_old/pmid33958799"
+TAG = "33958799_Human_airway"
+Read_Seurat_file_in_the_folder_UCSC(folder)
+Prepare_Seurat_file_in_the_folder_UCSC(folder,norm="log")
+Prepare_Seurat_file_in_the_folder_UCSC_STEP2(folder)
+Prepare_Seurat_file_in_the_folder_UCSC_STEP2_copy_folder(folder,to,TAG)
+
+### 3 #####
+folder = "/zp1/data/plyu3/UCSC_old/pmid34004146"
+TAG = "34004146_Mouse_Brain"
+Read_Seurat_file_in_the_folder_UCSC(folder)
+Prepare_Seurat_file_in_the_folder_UCSC(folder,norm="counts")
+Prepare_Seurat_file_in_the_folder_UCSC_STEP2(folder)
+Prepare_Seurat_file_in_the_folder_UCSC_STEP2_copy_folder(folder,to,TAG)
+
+### 4 ######
+folder = "/zp1/data/plyu3/UCSC_old/pmid34494546"
+TAG = "34494546_Mouse_Brain"
+Read_Seurat_file_in_the_folder_UCSC(folder)
+Prepare_Seurat_file_in_the_folder_UCSC(folder,norm="counts")
+Prepare_Seurat_file_in_the_folder_UCSC_STEP2(folder)
+Prepare_Seurat_file_in_the_folder_UCSC_STEP2_copy_folder(folder,to,TAG)
+
+### 
+### 1 ######
+###
+
+folder = "/zp1/data/plyu3/UCSC_old/pmid34497421"
+TAG = "34497421_Human_Brain"
+Read_Seurat_file_in_the_folder_UCSC(folder)
+Prepare_Seurat_file_in_the_folder_UCSC(folder,norm="counts")
+Prepare_Seurat_file_in_the_folder_UCSC_STEP2(folder)
+Prepare_Seurat_file_in_the_folder_UCSC_STEP2_copy_folder(folder,to,TAG)
+
+
+###
+### 2 ######
+###
+folder = "/zp1/data/plyu3/UCSC_old/pmid34616070Neocortex"
+TAG = "34616070_Neocortex"
+Read_Seurat_file_in_the_folder_UCSC(folder)
+
+###
+Prepare_Seurat_file_in_the_folder_UCSC(folder,norm="counts")
+Prepare_Seurat_file_in_the_folder_UCSC_STEP2(folder)
+Prepare_Seurat_file_in_the_folder_UCSC_STEP2_copy_folder(folder,to,TAG)
+
+### 4 ######
+folder = "/zp1/data/plyu3/UCSC_old/pmid35093191"
+TAG = "35093191_Human_Brain"
+Read_Seurat_file_in_the_folder_UCSC(folder)
+Prepare_Seurat_file_in_the_folder_UCSC(folder,norm="log")
+Prepare_Seurat_file_in_the_folder_UCSC_STEP2(folder)
+Prepare_Seurat_file_in_the_folder_UCSC_STEP2_copy_folder(folder,to,TAG)
+
+###
+### 5 ######
+###
+folder = "/zp1/data/plyu3/UCSC_old/pmid35165441"
+TAG = "35165441_Human_Brain"
+Read_Seurat_file_in_the_folder_UCSC(folder)
+Prepare_Seurat_file_in_the_folder_UCSC(folder,norm="counts")
+Prepare_Seurat_file_in_the_folder_UCSC_STEP2(folder)
+Prepare_Seurat_file_in_the_folder_UCSC_STEP2_copy_folder(folder,to,TAG)
+
+
+
+###
+### OK!!! next is the SCP datasets !!! ########
+###
+
+
+###
+### this is not on the UCSC_old folder !!! #####
+###
+
+to = "/zp1/data/plyu3/CellAnn_batch8/"
+
+
+
+#### batch 1 ###
+
+folder = "/zp1/data/plyu3/SCP_old/pmid28428369"
+TAG = "28428369_Human_Blood"
+Read_Seurat_file_in_the_folder_UCSC(folder)
+Prepare_Seurat_file_in_the_folder_UCSC(folder,norm="log")
+Prepare_Seurat_file_in_the_folder_UCSC_STEP2(folder)
+Prepare_Seurat_file_in_the_folder_UCSC_STEP2_copy_folder(folder,to,TAG)
+
+
+#### batch 2 ###
+mkdir pmid30382198ALM
+mv  pmid30382198ALM_seurat_obj pmid30382198ALM/pmid30382198ALM_seurat_obj
+
+folder = "/zp1/data/plyu3/SCP_old/pmid30382198ALM"
+TAG = "30382198_Mouse_Brain"
+Read_Seurat_file_in_the_folder_UCSC(folder)
+Prepare_Seurat_file_in_the_folder_UCSC(folder,norm="counts")
+Prepare_Seurat_file_in_the_folder_UCSC_STEP2(folder)
+Prepare_Seurat_file_in_the_folder_UCSC_STEP2_copy_folder(folder,to,TAG)
+
+
+#### batch 3 ###
+mkdir /zp1/data/plyu3/SCP_old/pmid30382198LGd
+mv  pmid30382198LGd_seurat_obj pmid30382198LGd/pmid30382198LGd_seurat_obj
+
+folder = "/zp1/data/plyu3/SCP_old/pmid30382198LGd"
+TAG = "30382198_Mouse_Brain_LGd"
+Read_Seurat_file_in_the_folder_UCSC(folder)
+Prepare_Seurat_file_in_the_folder_UCSC(folder,norm="counts")
+Prepare_Seurat_file_in_the_folder_UCSC_STEP2(folder)
+Prepare_Seurat_file_in_the_folder_UCSC_STEP2_copy_folder(folder,to,TAG)
+
+#### batch 4 ###
+mkdir /zp1/data/plyu3/SCP_old/pmid32413319
+mv  pmid32413319_seurat_obj pmid32413319/pmid32413319_seurat_obj
+
+folder = "/zp1/data/plyu3/SCP_old/pmid32413319"
+TAG = "32413319_Human_Airway"
+Read_Seurat_file_in_the_folder_UCSC(folder)
+Prepare_Seurat_file_in_the_folder_UCSC(folder,norm="log")
+Prepare_Seurat_file_in_the_folder_UCSC_STEP2(folder)
+Prepare_Seurat_file_in_the_folder_UCSC_STEP2_copy_folder(folder,to,TAG)
+
+
+####
+#### batch5 #####
+#### pmid32427356_seurat_obj
+
+mkdir "/zp1/data/plyu3/SCP_old/pmid32427356"
+mv pmid32427356_seurat_obj pmid32427356/pmid32427356_seurat_obj
+
+folder = "/zp1/data/plyu3/SCP_old/pmid32427356"
+TAG = "32427356_Mouse_Bone"
+Read_Seurat_file_in_the_folder_UCSC(folder)
+Prepare_Seurat_file_in_the_folder_UCSC(folder,norm="log")
+Prepare_Seurat_file_in_the_folder_UCSC_STEP2(folder)
+Prepare_Seurat_file_in_the_folder_UCSC_STEP2_copy_folder(folder,to,TAG)
+
+
+#### batch6 #####
+#### pmid32555229
+mkdir /zp1/data/plyu3/SCP_old/pmid32555229_AC
+mkdir /zp1/data/plyu3/SCP_old/pmid32555229_BP
+mkdir /zp1/data/plyu3/SCP_old/pmid32555229_HC
+mkdir /zp1/data/plyu3/SCP_old/pmid32555229_NN
+mkdir /zp1/data/plyu3/SCP_old/pmid32555229_PR
+mkdir /zp1/data/plyu3/SCP_old/pmid32555229_RGC
+
+cd /zp1/data/plyu3/SCP_old/pmid32555229
+
+folder = "/zp1/data/plyu3/SCP_old/pmid32555229_AC"
+TAG = "32555229_Human_eye_AC"
+Read_Seurat_file_in_the_folder_UCSC(folder)
+Prepare_Seurat_file_in_the_folder_UCSC(folder,norm="log2")
+Prepare_Seurat_file_in_the_folder_UCSC_STEP2(folder)
+Prepare_Seurat_file_in_the_folder_UCSC_STEP2_copy_folder(folder,to,TAG)
+
+
+#### batch 1 ####
+folder = "/zp1/data/plyu3/SCP_old/pmid32555229_BP"
+TAG = "32555229_Human_eye_BP"
+Read_Seurat_file_in_the_folder_UCSC(folder)
+Prepare_Seurat_file_in_the_folder_UCSC(folder,norm="log2")
+Prepare_Seurat_file_in_the_folder_UCSC_STEP2(folder)
+Prepare_Seurat_file_in_the_folder_UCSC_STEP2_copy_folder(folder,to,TAG)
+
+#### batch 2 ####
+folder = "/zp1/data/plyu3/SCP_old/pmid32555229_HC"
+TAG = "32555229_Human_eye_HC"
+Read_Seurat_file_in_the_folder_UCSC(folder)
+Prepare_Seurat_file_in_the_folder_UCSC(folder,norm="log2")
+Prepare_Seurat_file_in_the_folder_UCSC_STEP2(folder)
+Prepare_Seurat_file_in_the_folder_UCSC_STEP2_copy_folder(folder,to,TAG)
+
+#### batch 3 ####
+folder = "/zp1/data/plyu3/SCP_old/pmid32555229_NN"
+TAG = "32555229_Human_eye_NN"
+Read_Seurat_file_in_the_folder_UCSC(folder)
+Prepare_Seurat_file_in_the_folder_UCSC(folder,norm="log2")
+Prepare_Seurat_file_in_the_folder_UCSC_STEP2(folder)
+Prepare_Seurat_file_in_the_folder_UCSC_STEP2_copy_folder(folder,to,TAG)
+
+#### batch 4 ####
+folder = "/zp1/data/plyu3/SCP_old/pmid32555229_PR"
+TAG = "32555229_Human_eye_PR"
+Read_Seurat_file_in_the_folder_UCSC(folder)
+Prepare_Seurat_file_in_the_folder_UCSC(folder,norm="log2")
+Prepare_Seurat_file_in_the_folder_UCSC_STEP2(folder)
+Prepare_Seurat_file_in_the_folder_UCSC_STEP2_copy_folder(folder,to,TAG)
+
+#### batch 5 ####
+folder = "/zp1/data/plyu3/SCP_old/pmid32555229_RGC"
+TAG = "32555229_Human_eye_RGC"
+Read_Seurat_file_in_the_folder_UCSC(folder)
+Prepare_Seurat_file_in_the_folder_UCSC(folder,norm="log2")
+Prepare_Seurat_file_in_the_folder_UCSC_STEP2(folder)
+Prepare_Seurat_file_in_the_folder_UCSC_STEP2_copy_folder(folder,to,TAG)
+
+#### batch6 ######
+
+mkdir "/zp1/data/plyu3/SCP_old/pmid32994417"
+mv pmid32994417_seurat_obj pmid32994417/pmid32994417_seurat_obj
+
+folder = "/zp1/data/plyu3/SCP_old/pmid32994417"
+TAG = "32994417_Mouse_Brain"
+Read_Seurat_file_in_the_folder_UCSC(folder)
+Prepare_Seurat_file_in_the_folder_UCSC(folder,norm="log")
+Prepare_Seurat_file_in_the_folder_UCSC_STEP2(folder)
+Prepare_Seurat_file_in_the_folder_UCSC_STEP2_copy_folder(folder,to,TAG)
+
+
+### batch7 ####
+
+mkdir "/zp1/data/plyu3/SCP_old/pmid33444290"
+mv pmid33444290_seurat_obj pmid33444290/pmid33444290_seurat_obj
+
+folder = "/zp1/data/plyu3/SCP_old/pmid33444290"
+TAG = "32994417_Mouse_Kidney"
+Read_Seurat_file_in_the_folder_UCSC(folder)
+Prepare_Seurat_file_in_the_folder_UCSC(folder,norm="log")
+Prepare_Seurat_file_in_the_folder_UCSC_STEP2(folder)
+Prepare_Seurat_file_in_the_folder_UCSC_STEP2_copy_folder(folder,to,TAG)
+
+
+### batch1 #####
+folder = "/zp1/data/plyu3/SCP_old/pmid33655247Heart"
+TAG = "33655247_Human_Heart"
+Read_Seurat_file_in_the_folder_UCSC(folder)
+Prepare_Seurat_file_in_the_folder_UCSC(folder,norm="log2")
+Prepare_Seurat_file_in_the_folder_UCSC_STEP2(folder)
+Prepare_Seurat_file_in_the_folder_UCSC_STEP2_copy_folder(folder,to,TAG)
+
+
+### batch2 #####
+folder = "/zp1/data/plyu3/SCP_old/pmid33655247Kidney"
+TAG = "33655247_Human_Kidney"
+Read_Seurat_file_in_the_folder_UCSC(folder)
+Prepare_Seurat_file_in_the_folder_UCSC(folder,norm="log2")
+Prepare_Seurat_file_in_the_folder_UCSC_STEP2(folder)
+Prepare_Seurat_file_in_the_folder_UCSC_STEP2_copy_folder(folder,to,TAG)
+
+
+### batch3 #####
+folder = "/zp1/data/plyu3/SCP_old/pmid33655247Liver"
+TAG = "33655247_Human_Liver"
+Read_Seurat_file_in_the_folder_UCSC(folder)
+Prepare_Seurat_file_in_the_folder_UCSC(folder,norm="log")
+Prepare_Seurat_file_in_the_folder_UCSC_STEP2(folder)
+Prepare_Seurat_file_in_the_folder_UCSC_STEP2_copy_folder(folder,to,TAG)
+
+### batch4 #####
+folder = "/zp1/data/plyu3/SCP_old/pmid33655247Lung"
+TAG = "33655247_Human_Lung"
+Read_Seurat_file_in_the_folder_UCSC(folder)
+Prepare_Seurat_file_in_the_folder_UCSC(folder,norm="log")
+Prepare_Seurat_file_in_the_folder_UCSC_STEP2(folder)
+Prepare_Seurat_file_in_the_folder_UCSC_STEP2_copy_folder(folder,to,TAG)
+
+### batch5 #####
+folder = "/zp1/data/plyu3/SCP_old/pmid34616064adult"
+TAG = "34616064_Mouse_brain_adult"
+Read_Seurat_file_in_the_folder_UCSC(folder)
+Prepare_Seurat_file_in_the_folder_UCSC(folder,norm="counts")
+Prepare_Seurat_file_in_the_folder_UCSC_STEP2(folder)
+Prepare_Seurat_file_in_the_folder_UCSC_STEP2_copy_folder(folder,to,TAG)
+
+
+### batch6 #####
+folder = "/zp1/data/plyu3/SCP_old/pmid34616064dev"
+TAG = "34616064_Mouse_brain_dev"
+Read_Seurat_file_in_the_folder_UCSC(folder)
+Prepare_Seurat_file_in_the_folder_UCSC(folder,norm="counts")
+Prepare_Seurat_file_in_the_folder_UCSC_STEP2(folder)
+Prepare_Seurat_file_in_the_folder_UCSC_STEP2_copy_folder(folder,to,TAG)
+
+### batch2 #####
+mkdir "/zp1/data/plyu3/SCP_old/pmid34642245"
+mv pmid34642245_seurat_obj pmid34642245/pmid34642245_seurat_obj
+
+folder = "/zp1/data/plyu3/SCP_old/pmid34642245"
+TAG = "34642245_Mouse_Blood"
+Read_Seurat_file_in_the_folder_UCSC(folder)
+Prepare_Seurat_file_in_the_folder_UCSC(folder,norm="log")
+Prepare_Seurat_file_in_the_folder_UCSC_STEP2(folder)
+Prepare_Seurat_file_in_the_folder_UCSC_STEP2_copy_folder(folder,to,TAG)
+
+#### batch3 #####
+folder = "/zp1/data/plyu3/SCP_old/pmid35241836"
+TAG = "35241836_Human_Pancreas"
+Read_Seurat_file_in_the_folder_UCSC(folder)
+Prepare_Seurat_file_in_the_folder_UCSC(folder,norm="log")
+Prepare_Seurat_file_in_the_folder_UCSC_STEP2(folder)
+Prepare_Seurat_file_in_the_folder_UCSC_STEP2_copy_folder(folder,to,TAG)
+
+#### batch6 #####
+folder = "/zp1/data/plyu3/SCP_old/pmid35296864Hs"
+TAG = "35296864_Human_Adipose"
+Read_Seurat_file_in_the_folder_UCSC(folder)
+Prepare_Seurat_file_in_the_folder_UCSC(folder,norm="log")
+Prepare_Seurat_file_in_the_folder_UCSC_STEP2(folder)
+Prepare_Seurat_file_in_the_folder_UCSC_STEP2_copy_folder(folder,to,TAG)
+
+
+#### batch1 #####
+folder = "/zp1/data/plyu3/SCP_old/pmid35296864Mm"
+TAG = "35296864_Mouse_Adipose"
+Read_Seurat_file_in_the_folder_UCSC(folder)
+Prepare_Seurat_file_in_the_folder_UCSC(folder,norm="log")
+Prepare_Seurat_file_in_the_folder_UCSC_STEP2(folder)
+Prepare_Seurat_file_in_the_folder_UCSC_STEP2_copy_folder(folder,to,TAG)
+
+
+
+
+###
+### blue download mouse eye datasets #######
+###
+
+scp -r /zp1/data/yzhai11/SCPData plyu3@omb2.onc.jhmi.edu:/zp1/data/plyu3/SCP_old
+
+### Next we download a new retina datasets ####
+mkdir /zp1/data/plyu3/Eye_add_CellAnn
+Single cell RNA-Seq atlas of the developing murine retina
+PMID: 31128945
+mkdir /zp1/data/plyu3/Eye_add_CellAnn/31128945_Mouse_dev_retina
+
+
+### ##### ###
+### OK!!! ###
+### ##### ###
+
+
+
+
+###
+###
+### batch7 #####
+###
+folder = "/zp1/data/plyu3/Eye_add_CellAnn/31128945_Mouse_dev_retina"
+setwd(folder)
+files = list.files()
+mat = Matrix::readMM("10x_mouse_retina_development.mtx")
+cols = read.table(files[3],header=T,sep=',')
+genes = read.table(files[1],header=T,sep=',')
+
+rownames(mat) = genes$gene_short_name
+colnames(mat) = cols$barcode
+
+cluster = cols[,c(2,94,9,10,11)]
+colnames(cluster) = c()
+
+colnames(cluster) <- c('cell','celltype','dim1','dim2','dim3')
+Broad_create_seurat_obj(mat,cluster,file="31128945_Mouse_dev_retina_seurat_obj")
+##### 
+
+TAG = "31128945_Mouse_dev_retina"
+
+Read_Seurat_file_in_the_folder_UCSC(folder)
+Prepare_Seurat_file_in_the_folder_UCSC(folder,norm="counts")
+Prepare_Seurat_file_in_the_folder_UCSC_STEP2(folder)
+Prepare_Seurat_file_in_the_folder_UCSC_STEP2_copy_folder(folder,to,TAG)
+
+
+
+#####
+##### Then next paper !!! ######
+#####
+#####
+##### Jie's science paper !!! #######
+#####
+Gene regulatory networks controlling vertebrate retinal regeneration
+
+PMID: 33004674
+mkdir /zp1/data/plyu3/Eye_add_CellAnn/33004674_Mouse_injury_retina
+
+##### 
+##### prepare !!! #######
+#####
+
+##### batch7 ############
+#####
+folder = "/zp1/data/plyu3/Eye_add_CellAnn/33004674_Mouse_injury_retina"
+setwd(folder)
+load('Mouse_LD_pbmc_seurat.RData')
+
+#####
+Mouse_LD_pbmc_seurat <- UpdateSeuratObject(pbmc)
+
+matrix_input = Mouse_LD_pbmc_seurat[['RNA']]@counts
+
+#####
+cluster = read.table('Mouse_LD_cell_features.tsv',header=F,sep='\t')
+cluster = cluster[,c(1,3,4,5)]
+colnames(cluster) <- c('cell','celltype','dim1','dim2')
+
+##### replace with gene symbol #####
+#####
+gene = read.table('Mouse_gene_features.tsv',sep='\t')
+
+m = match(rownames(matrix_input),gene$V1)
+rownames(matrix_input) = gene$V2[m]
+
+TAG = "33004674_Mouse_injury_retina"
+
+Broad_create_seurat_obj(matrix_input,cluster,file="33004674_Mouse_injury_retina_seurat_obj")
+Read_Seurat_file_in_the_folder_UCSC(folder)
+Prepare_Seurat_file_in_the_folder_UCSC(folder,norm="counts")
+Prepare_Seurat_file_in_the_folder_UCSC_STEP2(folder)
+Prepare_Seurat_file_in_the_folder_UCSC_STEP2_copy_folder(folder,to,TAG)
+
+#######
+####### OK!!! Next retina reference !! #########
+#######
+
+Cell-Type-Specific Complement Expression in the
+Healthy and Diseased Retina
+
+GSE116426
+
+
+#######
+Phase transition specified by a binary code patterns the vertebrate eye cup
+
+
+#######
+Single-cell transcriptomics of the human retinal pigment epithelium and choroid in health and macular degeneration
+
+
+
+
+
+#######
+The Tabula Sapiens: A multiple-organ, single-cell transcriptomic atlas of humans
+#######
+####### CellXGene website ########
+#######
+mkdir /zp1/data/plyu3/Altas_add_CellAnn
+mkdir /zp1/data/plyu3/Altas_add_CellAnn/Tabula_Sapiens_combine
+
+cd /zp1/data/plyu3/Altas_add_CellAnn/Tabula_Sapiens_combine
+
+nohup curl -o local.rds "https://corpora-data-prod.s3.amazonaws.com/fab1d235-d9fe-4028-81db-029983860486/local.rds?AWSAccessKeyId=ASIATLYQ5N5XTF2IWXFA&Signature=7CYOdect5EzJmO3qvwlST2yYado%3D&x-amz-security-token=IQoJb3JpZ2luX2VjEFAaCXVzLXdlc3QtMiJHMEUCIQCHc%2ByB9tr%2Bk%2FzGGcqdvBzCWmn6Vpw%2BLzvvoBa%2FYARL9wIgSk5bw3Ag1pxHkWlUdYTiWemnKb02QbAnvwxBdS5QaWsq9AMIyf%2F%2F%2F%2F%2F%2F%2F%2F%2F%2FARABGgwyMzE0MjY4NDY1NzUiDAIPGlX2F2Aw%2BSABIirIA8o3LqwUbKtFvYuZTk8QFl1r52JelIeKpyXncTgFrClTrH%2FFIL07t2xUq4%2FnlSBQ9swk0SGQP%2BWajjagebV%2Ba3MLbIweiF0frL8mtbfDro%2BFHbPXxnxvll%2Fu7xBgTt3uOwW1NmRe13hZJyttJFC%2FuXSiSyU0kvmW2RpoMWfaj4GV5pUbF%2FAAYNM2FWAsZNBQniv82S4un3DVdNkCzCcoFSFNRFqq8hZQOfS9GxGMQwOc%2B1%2F%2FkxGddmTIJDpGox%2FL8j5c9SkJTFFaUSfflLSM29RSUrAAPtt3aMnoH6ZGmoHIN4DcU5Yqhbf4mSQ1Wjldxdnzr8%2Fs64M9C8P2nzy7GR5l2QDEcTQFLWFm4xaQCC2xOJ6EfbgdlpQWUuVLhneoj6UhJtxOXT71lchc9%2FRQafdYLlBvGdDwznnfBp7Sj4ctADYSS3PwLUxdXYA6cpEbxQh3MRWR0TckO1foNOgJO8DAdyBuiMVVNRnQgnFqnQOUVzrUCGtC%2FPjt1ipOmLnJeOjOdU%2BrrkoS2B5r8fvZBjoBK1jbtGL7JicCMwqwtGXD0XVL5CxOyi1N6Ianob7K5l0sVw9k8S%2ForfxJ7HHqysUxtZUniAcdljDG6uueBjqlAVcFDw2P%2F50COUtAly%2BX0sQ%2B7xX34Dr4zuB773IvPfmpSrFNtQ1%2BrGQW09t4xBcg4zWlGNnX18uyMbUZjwlUDen2PeRVRP8NzXaDYdrOhGqnuoaUDxwmqHoOAHG3TQpUG3%2FsPkAsywoEHFKKdkkzwAryJoruI13DL0MPcM38nuba4MMzPq1EUrNuALiY4G1TYjh6xsXfOt%2B9CNFE4VHeUJOI2mALjw%3D%3D&Expires=1675898913" &
+
+
+####### OK!!! next altas !!! ######
+#######
+
+A human cell atlas of fetal gene expression
+
+####### CellXGene website ##########
+
+mkdir /zp1/data/plyu3/Altas_add_CellAnn/Human_atlas_fetal
+
+nohup curl -o local.rds "https://corpora-data-prod.s3.amazonaws.com/eaa5ade6-3207-4bbb-bfb8-025f2f917068/local.rds?AWSAccessKeyId=ASIATLYQ5N5X5C4BVZ42&Signature=xwjWG493gK505ALGRJSafU5UmAg%3D&x-amz-security-token=IQoJb3JpZ2luX2VjEFAaCXVzLXdlc3QtMiJHMEUCIAqUVzEPmniayMa69M5LSnZZWWYmWlUpIuJsem4epIQtAiEAkhehJ9sIohd1rChk2FADtI7PrAybFHS2tZdGzgHt4Z0q9AMIyf%2F%2F%2F%2F%2F%2F%2F%2F%2F%2FARABGgwyMzE0MjY4NDY1NzUiDOodgVcp6c5Jt9m4VCrIA966Gx4Dd%2Fmebcuenh1JoMbG9sB75uQ28wmoJqfUhc5lQqPEUGrDSNqiaE6O9vuMdzJa6behkijPQI07FgxRzg8w4ZhUfxPUsalOSClcnHW0ql8WGWdoEFn1ML%2FYYqBbvGs68YU9vZ5UcQ7A3VMSqWXIhjSGO1FbBSvNqbADah2%2BGu03zk0PU1AEOCGepQQl81TmSQavHeB0rO9M3TD5LitUfD7Ppk1c54eErXl5cR3klxOGxSdgfCs69fTsKo4g%2BADz%2BxyBZLHSg9VP9vPFED%2FmrRAyCq9kFpPEDZ5ksZ6M2ISGGQT3DDLLSp0arNR4RD6he8NtguorccAOmu%2BLXimZpfVhp4Z2j3JAFtw8%2BX0ZWEPagEBLByP7mclv7z8n5Wt91wLq685BM%2BBdVIWGOOqat18Jlt8T0L4Dy4da0H1bzHPE28tCOJzBvT7JkuVGEmp6hEFG9fLo1pCDHOsI7y3mpsUmq6wMMdVrXH6JGn760XnXs7Rldlz3z0nL5ek3ZaMb9WXUoEBf4tc2%2FaQdDxPnxzO%2BJtVK7egQ7NNsnW03lxAcQnWtF0zxFlsQXDLqLlzqxjIlpob5wV8GmIyvGDZWbx4Heq4wwzDH6uueBjqlAbgBhEz3U51rIsL56oDTZ52psKNdK8MubOdTHb%2BWzdkTqRXqRB6AKMFCDPwYy6PF1o8rLbA8z%2FvfdtUli2ybnVac7xkKugxygYjxzdmdqPBMqosxpAhC6MsveM%2BdokybrzHmiO%2FZLweIOyU%2FL%2BUqUyAezO%2FUiiHzRGNk3tn4lLeRGtOKs6PQH1PaxcK4vioDvMu4XCctYZhFGgCaL0AdseJ6GbHn%2FA%3D%3D&Expires=1675900196" &
+
+####### Next !!! ##################
+
+Construction of a human cell landscape at single-cell level
+
+####### Next !!! ##################
+
+mkdir /zp1/data/plyu3/Altas_add_CellAnn/Human_cell_landscape
+
+nohup curl -o local.rds "https://corpora-data-prod.s3.amazonaws.com/29308ce0-745f-486b-976b-1e58f612a91f/local.rds?AWSAccessKeyId=ASIATLYQ5N5XXMQ6XW2Q&Signature=szWcy%2F8fjioBuXkfwQoeedEoG%2FE%3D&x-amz-security-token=IQoJb3JpZ2luX2VjEEsaCXVzLXdlc3QtMiJGMEQCIE%2FqjGTtvaaPjL9PkiWtk%2FFN97YVBOmM6Dst5He4kCf4AiBZgakARMyvJnHQcoEbfnfrTnQe%2B1fkKtngtBXOsaWHACr0AwjE%2F%2F%2F%2F%2F%2F%2F%2F%2F%2F8BEAEaDDIzMTQyNjg0NjU3NSIMwgT2MPXDACHbGtekKsgDENvyJh46atCnJuYMUz%2B7nYG8ByF6T%2FwNLoyYhgxLhlydoHXwXOB2pSzUmnOWxxET0fELWSr%2FXqo9Xs7Iqpyu%2F%2BqW2MtntacZbJz7adZkRLc1VLO4m9fPb2ehyyonQP3kDXZ%2Bo2%2BLsRrRgnfNV5scD6oqcUimcq%2FeyULRpyar5B6o%2B2kLT4PTpEbHKIcO1AmhFpLAXbALwzCf50KSdgdthUJgW4Cri5haEynNleufp%2Bp%2B6%2FMwJd3pb0fpqTw12gKi0qFv68PUryZI98Vky6uVXu01Vj4FUwi1AK9cA5iKJXT1zczt9XafILMarDpshaSNS1eJ9DAxh1z230IFUtFM6JEJGoD5grfXmBFMwldhErdbzXZTxlVHfAL6%2BRP3TauWWQ1n2Wk%2BUgqOe81mDQ7tloFzioR2zrW5jyEHZwSIT5X4IwN8eToF8OKWw1miEkeM2xLNJ5P0Vp8%2B6rPUDetcX5bsjsWiu1ZUv870Fs14Ys8H6zxPGKQeb4gTmSpZ%2BCHuMqGRAMMeEFVN32XlG%2BmRI%2BOB6Mo4lQEAwuOLfXYZgMjht6wT%2Bmwaf5AaA%2Ba%2F1%2FR0nbf1qZ275jmwf1aG%2FY%2B7gxMw4HmD8j8tMJLp6p4GOqYB7r9fD12pwaQiRlEiO3P%2F7TRHqyoKuE1iigNLOkbDd9Mdbl9BELecGQlWABSFG%2BqeNTaZvO0cYVjKdGBlNdLHak6vpcm%2FuOtUgcJnbOnpNZNNnKK5bbXOVdYFliQ1P21CJNiSbETHj21xDgLECTyDNstYxTnsVxzBZxReZbGoOa2nC5KYkDmD2tJg7KVk%2BnkMvgF4AFHjUiz4wHjH3kShUiTZwfE%2BiQ%3D%3D&Expires=1675900362" &
+
+
+####### Next !!! ###################
+MSK SPECTRUM – Ovarian cancer mutational processes drive site-specific immune evasion
+
+mkdir /zp1/data/plyu3/Altas_add_CellAnn/Ovarian_cancer
+
+nohup curl -o local.h5ad "https://corpora-data-prod.s3.amazonaws.com/b252b015-b488-4d5c-b16e-968c13e48a2c/local.h5ad?AWSAccessKeyId=ASIATLYQ5N5XXMQ6XW2Q&Signature=OCQJdJozuXyipgWU5GsCJT9DyYg%3D&x-amz-security-token=IQoJb3JpZ2luX2VjEEsaCXVzLXdlc3QtMiJGMEQCIE%2FqjGTtvaaPjL9PkiWtk%2FFN97YVBOmM6Dst5He4kCf4AiBZgakARMyvJnHQcoEbfnfrTnQe%2B1fkKtngtBXOsaWHACr0AwjE%2F%2F%2F%2F%2F%2F%2F%2F%2F%2F8BEAEaDDIzMTQyNjg0NjU3NSIMwgT2MPXDACHbGtekKsgDENvyJh46atCnJuYMUz%2B7nYG8ByF6T%2FwNLoyYhgxLhlydoHXwXOB2pSzUmnOWxxET0fELWSr%2FXqo9Xs7Iqpyu%2F%2BqW2MtntacZbJz7adZkRLc1VLO4m9fPb2ehyyonQP3kDXZ%2Bo2%2BLsRrRgnfNV5scD6oqcUimcq%2FeyULRpyar5B6o%2B2kLT4PTpEbHKIcO1AmhFpLAXbALwzCf50KSdgdthUJgW4Cri5haEynNleufp%2Bp%2B6%2FMwJd3pb0fpqTw12gKi0qFv68PUryZI98Vky6uVXu01Vj4FUwi1AK9cA5iKJXT1zczt9XafILMarDpshaSNS1eJ9DAxh1z230IFUtFM6JEJGoD5grfXmBFMwldhErdbzXZTxlVHfAL6%2BRP3TauWWQ1n2Wk%2BUgqOe81mDQ7tloFzioR2zrW5jyEHZwSIT5X4IwN8eToF8OKWw1miEkeM2xLNJ5P0Vp8%2B6rPUDetcX5bsjsWiu1ZUv870Fs14Ys8H6zxPGKQeb4gTmSpZ%2BCHuMqGRAMMeEFVN32XlG%2BmRI%2BOB6Mo4lQEAwuOLfXYZgMjht6wT%2Bmwaf5AaA%2Ba%2F1%2FR0nbf1qZ275jmwf1aG%2FY%2B7gxMw4HmD8j8tMJLp6p4GOqYB7r9fD12pwaQiRlEiO3P%2F7TRHqyoKuE1iigNLOkbDd9Mdbl9BELecGQlWABSFG%2BqeNTaZvO0cYVjKdGBlNdLHak6vpcm%2FuOtUgcJnbOnpNZNNnKK5bbXOVdYFliQ1P21CJNiSbETHj21xDgLECTyDNstYxTnsVxzBZxReZbGoOa2nC5KYkDmD2tJg7KVk%2BnkMvgF4AFHjUiz4wHjH3kShUiTZwfE%2BiQ%3D%3D&Expires=1675901470" &
+
+####### Next !!! ###################
+
+Mapping the developing human immune system across organs
+
+mkdir /zp1/data/plyu3/Altas_add_CellAnn/developing_human_immune_system
+
+cd /zp1/data/plyu3/Altas_add_CellAnn/developing_human_immune_system
+
+nohup curl -o local.rds "https://corpora-data-prod.s3.amazonaws.com/593125fb-7794-4a87-82db-2bb166072611/local.rds?AWSAccessKeyId=ASIATLYQ5N5XXMQ6XW2Q&Signature=JE6l%2F8xLDW1s9OFXYKJkJcqQo74%3D&x-amz-security-token=IQoJb3JpZ2luX2VjEEsaCXVzLXdlc3QtMiJGMEQCIE%2FqjGTtvaaPjL9PkiWtk%2FFN97YVBOmM6Dst5He4kCf4AiBZgakARMyvJnHQcoEbfnfrTnQe%2B1fkKtngtBXOsaWHACr0AwjE%2F%2F%2F%2F%2F%2F%2F%2F%2F%2F8BEAEaDDIzMTQyNjg0NjU3NSIMwgT2MPXDACHbGtekKsgDENvyJh46atCnJuYMUz%2B7nYG8ByF6T%2FwNLoyYhgxLhlydoHXwXOB2pSzUmnOWxxET0fELWSr%2FXqo9Xs7Iqpyu%2F%2BqW2MtntacZbJz7adZkRLc1VLO4m9fPb2ehyyonQP3kDXZ%2Bo2%2BLsRrRgnfNV5scD6oqcUimcq%2FeyULRpyar5B6o%2B2kLT4PTpEbHKIcO1AmhFpLAXbALwzCf50KSdgdthUJgW4Cri5haEynNleufp%2Bp%2B6%2FMwJd3pb0fpqTw12gKi0qFv68PUryZI98Vky6uVXu01Vj4FUwi1AK9cA5iKJXT1zczt9XafILMarDpshaSNS1eJ9DAxh1z230IFUtFM6JEJGoD5grfXmBFMwldhErdbzXZTxlVHfAL6%2BRP3TauWWQ1n2Wk%2BUgqOe81mDQ7tloFzioR2zrW5jyEHZwSIT5X4IwN8eToF8OKWw1miEkeM2xLNJ5P0Vp8%2B6rPUDetcX5bsjsWiu1ZUv870Fs14Ys8H6zxPGKQeb4gTmSpZ%2BCHuMqGRAMMeEFVN32XlG%2BmRI%2BOB6Mo4lQEAwuOLfXYZgMjht6wT%2Bmwaf5AaA%2Ba%2F1%2FR0nbf1qZ275jmwf1aG%2FY%2B7gxMw4HmD8j8tMJLp6p4GOqYB7r9fD12pwaQiRlEiO3P%2F7TRHqyoKuE1iigNLOkbDd9Mdbl9BELecGQlWABSFG%2BqeNTaZvO0cYVjKdGBlNdLHak6vpcm%2FuOtUgcJnbOnpNZNNnKK5bbXOVdYFliQ1P21CJNiSbETHj21xDgLECTyDNstYxTnsVxzBZxReZbGoOa2nC5KYkDmD2tJg7KVk%2BnkMvgF4AFHjUiz4wHjH3kShUiTZwfE%2BiQ%3D%3D&Expires=1675901940" &
+
+
+setwd('/zp1/data/plyu3/Altas_add_CellAnn/developing_human_immune_system')
+seurat <- readRDS('local.rds')
+
+
+####### 
+
+
+
+
+
+
+
+
+
+####### Next !!! ##################
+
+Tabula Muris Senis
+
+mkdir /zp1/data/plyu3/Altas_add_CellAnn/Tabula_Muris_Senis_10X
+
+cd /zp1/data/plyu3/Altas_add_CellAnn/Tabula_Muris_Senis_10X
+
+nohup curl -o local.rds "https://corpora-data-prod.s3.amazonaws.com/d9e56525-f4f4-4f6b-a7a7-2b7d158f282b/local.rds?AWSAccessKeyId=ASIATLYQ5N5XUSUXQLXK&Signature=qzCfnSj7o301eEEy%2BEqSZFHoPuo%3D&x-amz-security-token=IQoJb3JpZ2luX2VjEFAaCXVzLXdlc3QtMiJGMEQCIE8iqLLTGfeH%2FBD2xw81I2uIczT%2FTLNO%2Fm3uIhHsyeqtAiBHL88mYV8U3IQPwiRaGV8OJO8bg2P6BVvrItlsZSM5sir0AwjJ%2F%2F%2F%2F%2F%2F%2F%2F%2F%2F8BEAEaDDIzMTQyNjg0NjU3NSIMmYDqma5sMsWLcQ21KsgDWHWYlM27dhaxboMo%2BV7YBVaflWuGZaBocnWgGt1KILnlxqhEqllTWgjXZCiQ3pt87%2FCpokaEsZM09i4fiEv6hI7hU7Ec1y7%2FsPRBQ3RbTFCCg2kRESjEb4wJ5Yf9wfc2hnq8GxDhdtfTkXvgyFqDAPQKQ27%2BxR2JTyltdZ%2FyT%2FXxywXSEjCqT%2BVr6drXGv3dEoiqMrdsEAW46PyO%2Bmhwxvc96YHGm2%2BDHWtxTRqvilcLcWXfJXmkYuTmfd3aOS7%2FUAdrLZn8GKzo3FryNSne0mIXbf%2Bn2qWN8pYMFoWFzeppmO11aU%2FZ%2Fe4D%2BoC5su3swxYddh1LOp0HIGveXZQ5jeEKbG4EiHRKHYx%2FARCadZDPNNwDN9B9pcxySpf0hTbvlFOomPn%2BbnCpbl53Cx9SdhjtJA0b4EZ5UP2pPyuyNONXL5Hk8jz4Xh4%2BiN9AAeZWnlaEYFQSs4QiySDUdhVlWfLCyyfmKxGYtr5jJ7ORC8dAfF4L1c9Waf7Gxg8fmATZqUpfE65u%2BlZ66flctirufL0peOyvp8Zr%2FHFonblrKRLkWpYOjntcLHEBkS996j9F3z7qqjPigTmnESHC2NWZ%2FnQIyzerqhksMLn%2F654GOqYBO0OX2DEhiNr8S7lLZP%2FRBfOGsm%2B%2Bi%2BIfycpoQ9FNa%2FbO19djmzDaRAq7vum1V04lFXvmmIDfHNqmHamsAKC7fEGM8ya40IJ1bAevlStd5L8muezJNuV%2BzxSwBuOTXyz03wwhHlfINZP7WSUId6zQpCoEJaPVP1bOerQy5XFrZIQryEXwl2aP%2Fg%2B3po%2Bq9dIRUWHwvYsx4JHpFHvHz4aej6QCilWhlQ%3D%3D&Expires=1675902148" &
+
+####### OK!!! then we split the seurat objects !!! ########
+#######
+
+seurat_split_obj <- SplitObject(seurat, split.by = "tissue")
+
+for(i in 1:length(seurat_split_obj)){
+	tag = names(seurat_split_obj)[i]
+	tag = gsub(' ','_',tag)
+	print(tag)
+	####
+	tmp_seurat = seurat_split_obj[[i]]
+	####
+	file = paste0(tag,'_seurat_obj')
+	####
+	saveRDS(tmp_seurat,file=file)
+}
+
+
+for(i in 1:length(seurat_split_obj)){
+	tag = names(seurat_split_obj)[i]
+	tag = gsub(' ','_',tag)
+	print(tag)
+	######
+	folder = paste0("/zp1/data/plyu3/Altas_add_CellAnn/Tabula_Muris_Senis_10X/",tag,'10X')
+	######
+	TAG = "32669714_Tabula_Muris_10X"
+	TAG = paste0(TAG,'_',tag)
+	####
+	
+
+	####
+	file = paste0(tag,'10X','/',tag,'_seurat_obj')
+	####
+	saveRDS(tmp_seurat2,file=file)
+}
+
+
+
+####### 
+mkdir /zp1/data/plyu3/Altas_add_CellAnn/Tabula_Muris_Senis_Smartseq2
+
+cd /zp1/data/plyu3/Altas_add_CellAnn/Tabula_Muris_Senis_Smartseq2
+
+nohup curl -o local.rds "https://corpora-data-prod.s3.amazonaws.com/135b3e74-71b8-4c26-9e6b-2e6ec59d2306/local.rds?AWSAccessKeyId=ASIATLYQ5N5XYJYKESPS&Signature=DXD90cU9QRgLsXhHS5bJREjQnA0%3D&x-amz-security-token=IQoJb3JpZ2luX2VjEFAaCXVzLXdlc3QtMiJHMEUCIQCiQ6EFwqHUq%2BxUnXSkxX1nniqdWjKnKwWuWQKHDBL63AIgAa2qsqqaYG2FvlBIFv4EnvvtyNUJH6dqgKdRPTScHXQq9AMIyf%2F%2F%2F%2F%2F%2F%2F%2F%2F%2FARABGgwyMzE0MjY4NDY1NzUiDBRG0Mo1KlZFgGWZoSrIA5pgy4PcdF8oyYg4ZQw%2FQrvTQyUJOqcISLsyc%2BqLFEsUp1PZ%2FL07qW%2FEy471PCSdhQV90d0PSHtEJx9Lfyzu2ogAmVQ7ssaBmdVqY%2BKxrU3t2ET5ARSOETmsNYjRZA%2FNBWm2RUX5t6%2FYtl93pllbY209Xrn6EdX3vpOtUMfNd7HCT%2BeaWsWQYWAO8fog6JGPQ%2FWvptRSqfwSv9yxrI6uSx%2FXCyAu4AvLWPLlCCBO84PGAu4i7C1oNbaf2oAODtnr2kYYDLbwFo%2Br1DZWKBulqKFiDpU8pVVdTcmW1QyLEX9EJeHkgGJ8YneHOYRlkmsjMsZT5hnTyEFaqmIudLUHiJa%2F%2BSNwxwc9aDdMQIL11CQbwrE8YTpHJV0BE6DFiYsD7IpRSPRD4YuUeuVFpWcJr84fWnre7EvqOFTBDK7CpLDq8p4%2BoLMEfgy5kCfLYDNl1LMoXP%2Bt3qrAgz1jTE2a68dWWC%2FvXB7JwqrJfabWQdMoWuq1R7BQGlgpu22cYFqGnJtsErCKwYbLBqIYEDPoLMdcqZZ8uSnofUefSnJ0ckWcuUjgr9maHc%2ByptSGg%2BNeT8JhespAHrD0ouEGzSDfiEdd%2FFny5AVxmDC%2B%2FOueBjqlAbSflGX5UYIAU5sxaNB7afe31wnvs9gQ81UnS6xcJB5PQOvZZysYuOYBr%2FT8xr8cZ5QEJriIysIrKpCtSwq5bJR18XXXq8GdAvnf0Vn2rsarR6f4avBoNALfSRyKLY2mYBMufVPS4BSm5KIDp3IKymevbVsvTn0JMJ05i7xHVc%2BCwzRJwIoSydceLhxIysVk0LkfYcbJzxT%2BptzfdzPGQBkfWyzmVA%3D%3D&Expires=1675902271" &
+
+########
+
+setwd('/zp1/data/plyu3/Altas_add_CellAnn/Tabula_Muris_Senis_Smartseq2')
+seurat <- readRDS('local.rds')
+
+
+#######
+library('rtracklayer')
+
+file = '/zp1/data/plyu3/Human_scATACseq_new/scATAC/Human_annotation/gencode.v38.basic.annotation.nochr.gtf'
+gtf <- rtracklayer::import(file)
+gtf_df <- as.data.frame(gtf)
+
+
+
+
+gtf = rtracklayer::import('/zp1/data/plyu3/mouse_aging_res/gencode.vM10.basic.annotation.gtf.gz')
+head(gtf)
+gtf = data.frame(gtf)
+gtf = gtf[which(gtf$type == 'gene'),]
+gtf = gtf[which(gtf$gene_type == 'protein_coding'),]
+
+gtf = gtf[,c(10,12)]
+
+gtf$id = sapply(strsplit(as.character(gtf$gene_id),split='.',fixed=T),function(x) x[[1]])
+
+saveRDS(gtf,file='/zp1/data/plyu3/Altas_add_CellAnn/Human_gene_convert')
+
+saveRDS(gtf,file='/zp1/data/plyu3/Altas_add_CellAnn/Mouse_gene_convert')
+
+gtf <- readRDS('/zp1/data/plyu3/Altas_add_CellAnn/Mouse_gene_convert')
+########
+seurat_split_obj <- SplitObject(seurat, split.by = "tissue")
+
+for(i in 1:length(seurat_split_obj)){
+	tag = names(seurat_split_obj)[i]
+	tag = gsub(' ','_',tag)
+	print(tag)
+	####
+	tmp_seurat = seurat_split_obj[[i]]
+	####
+	mat = tmp_seurat[['RNA']]@counts
+	####
+	m = match(rownames(mat),gtf$id)
+	rownames(mat) = gtf$gene_name[m]
+	k = which(is.na(rownames(mat)) == T)
+	if(length(k) > 0){
+		mat = mat[-k,]
+	}
+	####
+	tmp_seurat2 = CreateSeuratObject(mat)
+	tmp_seurat2@meta.data = tmp_seurat@meta.data
+	tmp_seurat2$celltype = tmp_seurat2$cell_type
+	####
+	folder = paste0(tag,'10X')
+	command = paste('mkdir',folder)
+	system(command)
+	####
+	file = paste0(tag,'10X','/',tag,'_seurat_obj')
+	####
+	saveRDS(tmp_seurat2,file=file)
+}
+
+
+########
+########
+######## the last one !!!! ###########
+########
+########
+
+Cross-tissue immune cell analysis reveals tissue-specific features in humans
+
+mkdir /zp1/data/plyu3/Altas_add_CellAnn/Cross_tissue_immune_cell
+
+cd /zp1/data/plyu3/Altas_add_CellAnn/Cross_tissue_immune_cell
+
+nohup curl -o local.rds "https://corpora-data-prod.s3.amazonaws.com/229f8667-7318-4b5b-b6f2-c4cdae630130/local.rds?AWSAccessKeyId=ASIATLYQ5N5X6FZVAN7L&Signature=j3%2BRHAIQUO%2BvEZR07MRPgWDtTI4%3D&x-amz-security-token=IQoJb3JpZ2luX2VjEFAaCXVzLXdlc3QtMiJIMEYCIQDq3QHMRb8bxkNUulMZ9x%2BiqISJ2wL7vOJCBlivJPGVxgIhALkXjcfeyL74inEyI%2F7%2FTq0q6s3QU6hEwTegCNIV6HxmKvQDCMn%2F%2F%2F%2F%2F%2F%2F%2F%2F%2FwEQARoMMjMxNDI2ODQ2NTc1IgzqZPcL2MQmiqfUHq8qyAO7VtDAGjLnC%2FFte74UiZTSPT2JASA5N%2FP86sANy3NKqWjcaCskPs8afQbXjR0s4tz2odfv8eERedm4NnU%2FXr5Cs%2BrEoR2eQNi%2BGDa83PACJecgkDWM03O0Hive3Gx9T%2BZUnJEwLu3uLZxUNzBARkB9J8Vu26ZrSIQmG%2BjqoWjH8b%2BJJVIEQCua%2FaCTzIbdsFYVxlaiRK83ZdM0a%2BR%2BUcBV3pTjfYsb8oTB5HCW4tztKqPXDnI1tyXU8zGM40cvgmai12rweqvF3V%2FkU1SFabaSFjYksGiEZvvwbUBR%2FR3MYgKZvfguc0gHU%2FKxQlNOWEE11OZ7KM%2FIG9YnlOvW8qIT6hTPFhdkg5XCZ%2BIrzQ0cQB887lPIbjPJlez6hhlN6PTSS6cn%2FUi3djWv5%2BDbUVYubuGR3DFfqvaLfA%2B8d%2ByfJ9iNTIJXBYrocfmeBIE8pLWkmJTiukn2ZRo51PBp0HJ4esGiZpAgxbHzzDjrFkXyeAUjQzhNGBiT%2FnkB60BACihHMsHy3IGZmVbTbeG3YySMC3DyrBmBrpm%2BMY%2BshqD%2BigvDsOmO8anLUFXP%2BrKYzil3nuxBVLtfPL8OPKkhgYpDKP9p%2FHWtOk0wjvzrngY6pAH1AStw1kw7ciigqMdupoHhjf5PyFSJRgdXiTbA%2BxMN9Sfe4dVZ7D9HJCTiEdMyylHkt1ut0XcmwDoyi7UmOzgpDk96JAOrcmCv0Y6V%2FXWYOyri015pv3maU8CTIboA6GSPd%2FTzPCl3cIJnQcSxbzbOJWWOL1Hdj6wflcCWQHXuyiBGe9y9PAzJW7i6blMMd4zr1LbaHzKbFQo5ZUGiDrO7ToKrUw%3D%3D&Expires=1675902738" &
+
+setwd('/zp1/data/plyu3/Altas_add_CellAnn/Cross_tissue_immune_cell')
+seurat <- readRDS('local.rds')
+
+########
+seurat_split_obj <- SplitObject(seurat, split.by = "tissue")
+########
+
+
+
+for(i in 1:length(seurat_split_obj)){
+	tag = names(seurat_split_obj)[i]
+	tag = gsub(' ','_',tag)
+	print(tag)
+	####
+	tmp_seurat = seurat_split_obj[[i]]
+	####
+	file = paste0(tag,'_seurat_obj')
+	####
+	saveRDS(tmp_seurat,file=file)
+}
+
+########
+########
+
+load('/zp1/data/plyu3/Altas_add_CellAnn/Human_gene_convert')
+
+
+for(i in 1:length(seurat_split_obj)){
+	tag = names(seurat_split_obj)[i]
+	tag = gsub(' ','_',tag)
+	print(tag)
+	####
+	tmp_seurat = seurat_split_obj[[i]]
+	####
+	mat = tmp_seurat[['RNA']]@counts
+	####
+	m = match(rownames(mat),gtf$id)
+	rownames(mat) = gtf$gene_name[m]
+	k = which(is.na(rownames(mat)) == T)
+	if(length(k) > 0){
+		mat = mat[-k,]
+	}
+	####
+	tmp_seurat2 = CreateSeuratObject(mat)
+	tmp_seurat2@meta.data = tmp_seurat@meta.data
+	tmp_seurat2$celltype = tmp_seurat2$cell_type
+	####
+	folder = paste0(tag,'Cross_tissue_immune')
+	command = paste('mkdir',folder)
+	system(command)
+	####
+	file = paste0(tag,'Cross_tissue_immune','/',tag,'_seurat_obj')
+	####
+	saveRDS(tmp_seurat2,file=file)
+}
 
 
 
