@@ -1,0 +1,25 @@
+#### CellAnn
+#### uploading code 
+
+#### for big files
+####
+
+git lfs track *zip*
+
+git add *zip*
+
+git commit -m "Add large file"
+
+#### push the image ####
+
+git push origin main
+
+
+cd 
+
+git clone https://github.com/username/repository.git
+
+
+########
+########
+

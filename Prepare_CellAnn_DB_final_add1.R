@@ -1,16 +1,98 @@
 ssh plyu3@omb2.onc.jhmi.edu
 U[9C20&&
 
+
 conda activate seurat4
 R
+
+####
+library(Seurat)
 ####
 
 source("/zp1/data/plyu3/UCSC/Prepare_CellAnn_DB_final_source.R")
 source("/zp1/data/plyu3/UCSC/Prepare_CellAnn_DB_final_add1.R")
 
+to = "/zp1/data/plyu3/CellAnn_batch8/"
+to = "/zp1/data/plyu3/CellAnn_batch3/"
+to = "/zp1/data/plyu3/CellAnn_batch5/"
+
+####
+####
+to = "/zp1/data/plyu3/CellAnn_batch20/"
+to = "/zp1/data/plyu3/CellAnn_batch21/"
+to = "/zp1/data/plyu3/CellAnn_batch22/"
+
+to = "/zp1/data/plyu3/CellAnn_batch23/"
+to = "/zp1/data/plyu3/CellAnn_batch24/"
 #####
 #####
-#####
+
+to = "/zp1/data/plyu3/CellAnn_batch6/"
+
+######
+mkdir /zp1/data/plyu3/CellAnn_batch8/
+to = "/zp1/data/plyu3/CellAnn_batch8/"
+
+
+mkdir /zp1/data/plyu3/CellAnn_batch7
+to = "/zp1/data/plyu3/CellAnn_batch7/"
+
+#######
+####### Human and Mouse ID with Genes ########
+#######
+
+setwd("/zp1/data/plyu3/Altas_add_CellAnn/Anno_GeneID_and_GeneName")
+
+Human_gtf <- rtracklayer::import("gencode.v43.basic.annotation.gtf")
+
+Mouse_gtf <- rtracklayer::import("gencode.vM32.basic.annotation.gtf")
+
+Clean_gtf <- function(gtf){
+	k = which(gtf$type == "gene")
+	gtf_cl = gtf[k,]
+	######
+	convert_tab = data.frame(Gene_ID = gtf_cl$gene_id, Symbol = gtf_cl$gene_name)
+	######
+	convert_tab$Gene_ID_short = sapply(strsplit(convert_tab$Gene_ID,split=".",fixed=T),function(x) x[[1]])
+	######
+	return(convert_tab)
+}
+
+Human_gtf_tab = Clean_gtf(Human_gtf)
+Mouse_gtf_tab = Clean_gtf(Mouse_gtf)
+
+saveRDS(Human_gtf_tab,file="Human_gtf_tab")
+saveRDS(Mouse_gtf_tab,file="Mouse_gtf_tab")
+
+#######
+#######
+#######
+
+Convert_Mat_to_Symbol <- function(Seurat_Obj,sp="M"){
+	mat = Seurat_Obj[['RNA']]@counts
+	if(sp=="M"){
+		ref_tab = readRDS("/zp1/data/plyu3/Altas_add_CellAnn/Anno_GeneID_and_GeneName/Mouse_gtf_tab")
+	}
+	if(sp=="H"){
+		ref_tab = readRDS("/zp1/data/plyu3/Altas_add_CellAnn/Anno_GeneID_and_GeneName/Human_gtf_tab")
+	}
+	######
+	######
+	k_f = which(rownames(mat) %in% ref_tab$Gene_ID_short == T)
+	mat_cl = mat[k_f,]
+	#######
+	m_f = match(rownames(mat_cl),ref_tab$Gene_ID_short)
+	rownames(mat_cl) <- ref_tab$Symbol[m_f]
+	#######
+	m_d = which(duplicated(rownames(mat_cl)) == F)
+	mat_cl = mat_cl[m_d,]
+	#######
+	new_Seurat_obj = CreateSeuratObject(mat_cl)
+	#######
+	new_Seurat_obj@meta.data = Seurat_Obj@meta.data
+	#######
+	return(new_Seurat_obj)
+}
 
 
 Read_Seurat_file_in_the_folder_UCSC <- function(input_folder){
@@ -42,7 +124,7 @@ Read_Seurat_file_in_the_folder_UCSC <- function(input_folder){
 		###### Next we will check whether celltype exists: ########
 		k1 = which(colnames(seurat_obj@meta.data) == "celltype")
 		if(length(k1) != 1){
-			checked_items$results[2] = 'No celltype!'
+			checked_table$results[2] = 'No celltype!'
 			write.table(checked_table,file='checked_items.txt',sep="\t",quote=F,row.names=F)
 			return(checked_items)
 		}
@@ -123,7 +205,6 @@ Read_Seurat_file_in_the_folder_UCSC <- function(input_folder){
 }
 
 
-
 Prepare_Seurat_file_in_the_folder_UCSC <- function(input_folder,norm="log"){
 	#########
 	library(Seurat)
@@ -144,7 +225,7 @@ Prepare_Seurat_file_in_the_folder_UCSC <- function(input_folder,norm="log"){
 	seurat_obj_colsum = Matrix::colSums(seurat_obj[['RNA']]@counts)
 	k_NAN = which(is.nan(seurat_obj_colsum) == T)
 	if(length(k_NAN) > 0){
-		seurat_obj = seurat_obj[,-seurat_obj_colsum]
+		seurat_obj = seurat_obj[,-k_NAN]
 	}
 	#########
 	if(dim(seurat_obj)[2] > 250000){
@@ -272,6 +353,10 @@ runDEGs_Ref <- function(Seurat_Obj,method='COSG',idents='celltype',num_of_genes 
 
 CellAnn_Avg_Mat <- function(data_mat,data_cluster,log='log',scale_factor=10000){
 	######
+	Need_index_mat = which(is.na(colSums(data_mat))==F)
+	data_mat = data_mat[,Need_index_mat]
+	data_cluster = data_cluster[Need_index_mat]
+	######
 	tag_cluster = unname(data_cluster)
 	tag_cluster_level = levels(as.factor(tag_cluster))
 	###### normalized back datasets ######
@@ -290,7 +375,13 @@ CellAnn_Avg_Mat <- function(data_mat,data_cluster,log='log',scale_factor=10000){
 		index = which(data_cluster %in% tag_cluster_level[i] == T)
 		index_mat = data_mat_exp[,index]
 		######
-		index_sum = rowSums(index_mat)
+		if(length(index) > 1){
+			index_sum = rowSums(index_mat)
+		}
+		if(length(index) == 1){
+			index_sum = index_mat
+		}
+		######
 		######
 		merge_mat = c(merge_mat,index_sum)
 	}
@@ -377,6 +468,7 @@ Prepare_Seurat_file_in_the_folder_UCSC_STEP2 <- function(input_folder){
 	#seurat_obj[['RNA']]@counts = seurat_obj[['RNA']]@counts*100
 	seurat_obj <- NormalizeData(seurat_obj)
 	#####
+	seurat_obj$cielltype = as.character(seurat_obj$celltype)
 	#####
 	subset_matrix_res = subset_each_ct(seurat_obj,resolution=0.5)
 	##### OK! what is the next ? #####################
@@ -560,23 +652,261 @@ Broad_create_seurat_obj <- function(mat_input,cluster,file){
 	saveRDS(seurat_obj,file=file)
 }
 
-
+####
 ######## Next we will upload the files to the 
-######## we will first update the datasbase_sheet #########
-########
-
+######## we will first update the datasbase_sheet ######### 
 ######## tissue names all ########
+####
+
+
+#### write a function to add the table to the all tables ######
+####
+add_table2()
+
+add_table2 <- function(){
+	setwd("/Users/pin/Desktop/CellAlignment_Server_version2/database/")
+	######
+	ref_table2 = read.table('reference_table2.txt',sep="\t",header=T)
+	######
+	ref_table2_add = read.table('reference_table2_add.txt',sep="\t",header=T)
+	######
+	######
+	print(colnames(ref_table2))
+	print(colnames(ref_table2_add))
+	######
+	new_table = rbind(ref_table2,ref_table2_add)
+	######
+	k = which(duplicated(new_table$PMID) == T)
+	if(length(k) > 0){
+		new_table = new_table[-k,]
+	}
+	######
+	write.table(new_table,file="reference_table2.txt",sep="\t",quote=F,row.names=F)
+}
+
+
+Prepare_Seurat_file_in_the_folder_UCSC
+function(input_folder,norm="log"){
+	#########
+	library(Seurat)
+	##### we first go into the folder ######
+	setwd(input_folder)
+	##### 'Seurat_files_exists:' #####
+	files = list.files()
+	#####
+	##### searching seurat files ########
+	##### 
+	k = grep("_seurat_obj$",files)
+	#####
+	#########
+	seurat_file = files[k]
+	seurat_obj <- readRDS(seurat_file)
+	print(dim(seurat_obj))
+	#########
+	seurat_obj_colsum = Matrix::colSums(seurat_obj[['RNA']]@counts)
+	k_NAN = which(is.nan(seurat_obj_colsum) == T)
+	if(length(k_NAN) > 0){
+		seurat_obj = seurat_obj[,-seurat_obj_colsum]
+	}
+	#########
+	if(dim(seurat_obj)[2] > 250000){
+		index = sample(1:dim(seurat_obj)[2],250000)
+		seurat_obj = seurat_obj[,index]
+	}
+	##### first we convert matrix to counts ##########
+	if(norm == "log"){
+		######
+		mat = seurat_obj[['RNA']]@counts
+		mat_new = exp(mat)-1
+		######
+	}
+	if(norm == "counts"){
+		######
+		mat = seurat_obj[['RNA']]@counts
+		mat_new = mat
+		######
+	}
+	if(norm == "log2"){
+		######
+		mat = seurat_obj[['RNA']]@counts
+		mat_new = 2^(mat)-1
+		######
+	}
+	#####
+	k_NA_count = which(is.na(rowSums(mat_new)) == F)
+	if(length(k_NA_count) > 0){
+		mat_new = mat_new[k_NA_count,]
+	}
+	#####
+	seurat_obj_new = CreateSeuratObject(mat_new)
+	seurat_obj_new@meta.data = seurat_obj@meta.data
+	#####
+	##### next we add dims to this seurat_obj #######
+	#####
+	dims_index = c("dim1","dim2","dim3")
+	k = match(dims_index,colnames(seurat_obj_new@meta.data))
+	k = k[is.na(k) == F]
+	if(length(k) > 0){
+		k = k[is.na(k) == F]
+		UMAPs_mat = as.matrix(seurat_obj@meta.data[,k])
+		UMAPs_mat_new = Norm_UMAPs(UMAPs_mat)
+	}
+	if(length(k) == 0){
+		print("add custom UMAPs !!!!")
+		seurat_obj_new <- NormalizeData(seurat_obj_new)
+		seurat_obj_new <- FindVariableFeatures(seurat_obj_new)
+		seurat_obj_new <- ScaleData(seurat_obj_new)
+		seurat_obj_new <- RunPCA(seurat_obj_new)
+		seurat_obj_new <- RunUMAP(seurat_obj_new,dims=1:30)
+		#######
+		UMAPs_mat = as.matrix(seurat_obj_new[["umap"]]@cell.embeddings)
+		UMAPs_mat_new = Norm_UMAPs(UMAPs_mat)
+	}
+	#####
+	#####
+	#####
+	seurat_obj_new[['dims']] <- CreateDimReducObject(embeddings = UMAPs_mat_new, key = "dims_", assay = 'RNA')
+	#####
+	#png_file = paste0("dim_check.png")
+	#png(png_file,height=5000,width=6000,res=72*12)
+	#print(DimPlot(seurat_obj_new, reduction = "dims",group.by=c('celltype'),label = TRUE, label.size = 2.5, repel = TRUE,raster = FALSE))
+	#dev.off()
+	###### 
+	###### Next we will create the files #######
+	######
+	seurat_file_new = paste(seurat_file,'_new',sep="")
+	######
+	saveRDS(seurat_obj_new,file=seurat_file_new)
+}
 
 
 
+#####
+##### Next: check the files installed locally ######
+#####
+
+setwd("/Users/pin/Desktop/13LGS_plotly_figures/CellAnn_version1/database")
+
+datafile <- read.csv("database_sheet.csv")
+target_folder <- "/Users/pin/Desktop/13LGS_plotly_figures/CellAnn_version1/database_each"
+
+Check_files_for_step2 <- function(target_folder,datafile){
+	#########
+	tmp_datasets = data.frame(index=datafile$PMID,step2_files="NO!")
+	#########
+	all_files = list.files(target_folder)
+	#########
+	for(i in 1:length(tmp_datasets$index)){
+		tmp_index = tmp_datasets$index[i]
+		####
+		tags = c("_avg_mat","_avg_sub_mat","_Dimplot","_marker","_sub_marker")
+		tmp_files = paste0("pmid",tmp_index,tags)
+		####
+		m1 = which(all_files == tmp_files[1])
+		m2 = which(all_files == tmp_files[2])
+		m3 = which(all_files == tmp_files[3])
+		m4 = which(all_files == tmp_files[4])
+		m5 = which(all_files == tmp_files[5])
+		####
+		if(c(length(m1) + length(m2) + length(m3) + length(m4) + length(m5)) == 5){
+			tmp_datasets$step2_files[i] = "Yes!"
+		}
+		if(i == 138){
+			print(tmp_files)
+		}
+
+	}
+	return(tmp_datasets)
+}
+
+Check_results = Check_files_for_step2(target_folder,datafile)
+
+###########
+###########
+###########
+
+datafile <- read.csv("database_sheet.csv")
+
+reget_reference_table2 <- function(datafile){
+	#########
+	PMID = datafile$PMID
+	#########
+	#########
+	reference_index = paste0("ID:",PMID)
+	#########
+	#########
+	reference_avg_mat = paste0("pmid",PMID,"_avg_mat")
+	reference_avg_sub_mat = paste0("pmid",PMID,"_avg_sub_mat")
+	reference_marker = paste0("pmid",PMID,"_marker")
+	reference_sub_marker = paste0("pmid",PMID,"_sub_marker")
+	##########
+	out = data.frame(PMID=PMID,reference_index=reference_index,reference_avg_mat=reference_avg_mat,reference_avg_sub_mat=reference_avg_sub_mat,reference_marker=reference_marker,reference_sub_marker=reference_sub_marker)
+	return(out)
+}
+
+#######
+#######
+
+reference_table2 = reget_reference_table2(datafile)
+write.table(reference_table2,file="reference_table2.txt",sep="\t",quote=F,row.names=F)
 
 
+#######
+####### Next we will check the gene name !!! ######
+#######
 
+setwd("/Users/pin/Desktop/13LGS_plotly_figures/CellAnn_version1/database")
+folder = "/Users/pin/Desktop/13LGS_plotly_figures/CellAnn_version1/database_each"
 
+#######
+#######
 
+check_marker_genes <- function(folder){
+	#########
+	files = list.files(folder)
+	#########
+	files = files[grep("_avg_sub_mat",files)]
+	#########
+	result_table = data.frame(files=files,Genes="ND",NAN="ND")
+	#########
+	setwd(folder)
+	##########
+	for(i in 1:length(files)){
+		print(i)
+		temp_file = files[i]
+		temp_rds = readRDS(temp_file)
+		temp_gene = temp_rds[2,2]
+		####
+		result_table$Genes[i] = temp_gene
+		####
+		#### new results ####
+		####
+		#result_table2 <- unlist(temp_rds)
+		k = which(temp_rds[1,] == "NaN")
+		if(length(k) > 0){
+			#print(head(temp_rds))
+			result_table$NAN[i] = "Warning!"
+		}
 
+	}
+	##########
+	return(result_table)
+}
 
+res = check_marker_genes(folder)
 
+"pmid35817981_MCA2_0"
+temp_rds = readRDS("pmid32764665_Covid19_avg_sub_mat")
+
+k = which(is.nan(temp_rds) == T)
+
+####
+#### OK!!! check !!! ######
+####
+#### OK!! 先搞MCA2.0 #######
+####
+#### finished !!!! ########
+####
 
 
 
