@@ -1,0 +1,275 @@
+##### CellAnn ####
+##### CellAnn final checking !!! #####
+#####
+
+ssh plyu3@omb2.onc.jhmi.edu
+U[9C20&&
+
+
+conda activate seurat4
+R
+setwd("/zp1/data/plyu3/CellAnn_final_check")
+
+#####
+#####
+
+
+/zp1/data/plyu3/CellAnn_final_check/reference_table2_final_path.txt
+
+#####
+#####
+#####
+
+check_list <- read.table("reference_table2_final_path.txt",sep="\t",header=T)
+
+colnames(check_list)
+
+#####
+##### check each single file #######
+#####
+colnames(check_list)
+"PMID"       "Server"     "Folder"     "TAG"        "seurat_tag"
+
+check_process_Step1 <- function(check_list){
+	######
+	check_list$seurat_tag = "NotFind!!!"
+	######
+	for(i in 1:length(check_list$Folder)){
+		print(i)
+		tmp_folder = check_list$Folder[i]
+		######
+		setwd(tmp_folder)
+		files = list.files()
+		index = grep("_seurat_obj_new$",files)
+		######
+		if(length(index) == 1){
+			files_need = files[index]
+			files_need_tag = gsub("_seurat_obj_new","",files_need)
+			check_list$seurat_tag[i] = files_need_tag
+		}
+	}
+	return(check_list)
+}
+
+check_list2 = check_process_Step1(check_list)
+
+######
+###### then we write excel to check !!! ######
+######
+
+setwd("/zp1/data/plyu3/CellAnn_final_check")
+library(writexl)
+write_xlsx(check_list2,path="check_list2.xlsx")
+
+######
+######
+###### Next we will reduce the number of cells for each sample for each cell type !! ########
+###### Then we will prepare the python object to check the results !!!! #####################
+######
+######
+
+
+###### See the basic format of the seurat objects ######
+
+
+
+check_process_Step2 <- function(check_list,list_number=1:439){
+	######
+	######
+	######
+	for(i in list_number){
+		print(i)
+		tmp_folder = check_list$Folder[i]
+		print(tmp_folder)
+		######
+		setwd(tmp_folder)
+		files = list.files()
+		index = grep("_seurat_obj_new$",files)
+		######
+		files_need = files[index]
+		files_need_tag = gsub("_seurat_obj_new","",files_need)
+		######
+		tmp_seurat = readRDS(files_need)
+		###### count matrix is the count matrix !!!! ###########
+		###### count_matrix = tmp_seurat[['RNA']]@counts
+		###### head(Matrix::colSums(count_matrix))
+		tmp_cells_all = c()
+		######
+		table_ct = data.frame(table(tmp_seurat$celltype))
+		######
+		table_ct = table_ct[which(table_ct$Freq > 0),]
+		######
+		table_ct$Freq_new = 0
+		for(j in 1:length(table_ct$Var1)){
+			tmp_ct_name = as.character(table_ct$Var1[j])
+			tmp_ct_num = table_ct$Freq[j]
+			######
+			tmp_ct_seurat = tmp_seurat[,which(tmp_seurat$celltype == tmp_ct_name)]
+			######
+			if(tmp_ct_num > 300){
+				#### half half ####
+				delta = round(tmp_ct_num - 300)/2
+				tmp_ct_seurat_cell_tab = tmp_ct_seurat@meta.data[,c('nCount_RNA','cell_id')]
+				tmp_ct_seurat_cell_tab = tmp_ct_seurat_cell_tab[order(tmp_ct_seurat_cell_tab$nCount_RNA),]
+				####
+				cell_index = tmp_ct_seurat_cell_tab$cell_id[c(delta+1):c(length(tmp_ct_seurat_cell_tab$cell_id)-delta)]
+				####
+				tmp_ct_seurat_sub = tmp_ct_seurat[,which(tmp_ct_seurat$cell_id %in% cell_index == T)]
+				tmp_cells_all = c(tmp_cells_all,tmp_ct_seurat_sub$cell_id)
+			}
+			if(tmp_ct_num < 301){
+				tmp_ct_seurat_sub = tmp_ct_seurat
+				tmp_cells_all = c(tmp_cells_all,tmp_ct_seurat_sub$cell_id)
+			}
+			table_ct$Freq_new[j] = dim(tmp_ct_seurat_sub)[2]
+		}
+		######
+		tmp_seurat_new = tmp_seurat[,which(tmp_seurat$cell_id %in% tmp_cells_all == T)]
+		###### new seurat ###
+		FN = paste(files_need,'_clean',sep='')
+		saveRDS(tmp_seurat_new,file=FN)
+		######
+		FN2 = paste(files_need,'_cleanstat.txt',sep='')
+		write.table(table_ct,file=FN2,sep='\t',row.names=F,quote=F)
+	}
+	print('Done!!!')
+}
+
+check_process_Step2(check_list,list_number=214:439)
+
+#####
+##### celltype, dim1, dim2, nCount_RNA #######
+#####
+
+#####
+##### 如果大于阈值 那么去掉最 小的 counts 和 最大的 counts ###########
+##### 不用管 UMAP 了 其实 ########################################
+#####
+
+
+#####
+##### Next convert to python format scvi piplines ##############
+#####
+
+library(Seurat)
+
+check_process_Step3 <- function(check_list,list_number=1:439){
+	######
+	######
+	######
+	for(i in list_number){
+		print(i)
+		tmp_folder = check_list$Folder[i]
+		print(tmp_folder)
+		######
+		setwd(tmp_folder)
+		files = list.files()
+		index = grep("_seurat_obj_new_clean$",files)
+		######
+		files_need = files[index]
+		files_need_tag = gsub("_seurat_obj_new_clean","",files_need)
+		######
+		tmp_seurat = readRDS(files_need)
+		###### count matrix is the count matrix !!!! ###########
+		library(Seurat)
+		write.csv(Matrix::t(tmp_seurat[['RNA']]@counts), file = "py_expression_matrix.csv", row.names = TRUE)
+		write.csv(tmp_seurat@meta.data, file = "py_cell_metadata.csv", row.names = TRUE)
+		write.csv(rownames(tmp_seurat), file = "py_gene_metadata.csv")
+		###### count matrix ####################################
+		######
+		#####
+		###### new seurat ###
+		#####
+	}
+	print('Done!!!')
+}
+
+
+#####
+##### let us test in python whether we can read the file !!! #######
+#####
+
+conda activate scvi-env
+
+python
+
+import subprocess
+import argparse
+import os
+import re
+import pandas as pd
+import scanpy as sc
+import scvi
+import anndata
+
+os.chdir("/home/plyu3/cell_ann_part_datasets1/27565351_scRNA_Mouse Retinal Bipolar Neuron")
+
+expression_matrix = pd.read_csv("expression_matrix.csv", index_col=0)
+cell_metadata = pd.read_csv("cell_metadata.csv", index_col=0)
+gene_metadata = pd.read_csv("gene_metadata.csv", index_col=0)
+
+anndata_obj = anndata.AnnData(X=expression_matrix.values, obs=cell_metadata, var=gene_metadata)
+
+######
+######
+anndata_obj.layers["counts"] = anndata_obj.X
+anndata_obj.obs['batch'] = "batch1"
+
+sc.pp.highly_variable_genes(
+        anndata_obj,
+        flavor="seurat_v3",
+        n_top_genes=2000,
+        layer="counts",
+        batch_key="batch",
+        subset=True
+) 
+
+
+scvi.model.SCVI.setup_anndata(anndata_obj, layer="counts", batch_key="batch")
+vae = scvi.model.SCVI(anndata_obj, n_layers=2, n_latent=30, gene_likelihood="nb")
+
+lvae = scvi.model.SCANVI.from_scvi_model(
+        vae,
+        adata=anndata_obj,
+        labels_key="celltype",
+        unlabeled_category="Unknown",
+)
+
+anndata_obj.obsm["X_scANVI"] = lvae.get_latent_representation(anndata_obj)
+
+anndata_obj_scANVI = pd.DataFrame(anndata_obj.obsm['X_scANVI'])
+
+anndata_obj_scANVI.add_prefix('SCANVI_')
+
+Cellnames = list(pd.DataFrame(anndata_obj.obs['_scvi_batch']).index)
+anndata_obj_scANVI['Cell_ID'] = Cellnames
+
+anndata_obj_scANVI.to_csv(file_output, sep="\t",index=False)
+
+
+#####
+##### OK!!! Next we will integrate for the test datasets #######
+#####
+
+##### we will integrate from background matrix3 and query data matrix3 !!! #######
+#####
+##### we need testdatasets to go through the pipline !!! #######
+#####
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

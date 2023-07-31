@@ -28,8 +28,7 @@ input_folder = input_folder_example
 
 ####
 ####
-####
-####
+
 R
 
 Read_Seurat_file_in_the_folder_UCSC <- function(input_folder){
