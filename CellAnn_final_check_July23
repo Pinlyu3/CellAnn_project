@@ -1,6 +1,49 @@
 ##### CellAnn ####
 ##### CellAnn final checking !!! #####
 #####
+##### merge the list table with ######
+#####
+
+ssh plyu3@omb2.onc.jhmi.edu
+U[9C20&&
+
+#####
+#####
+setwd("/zp1/data/plyu3/CellAnn_final_check")
+
+check_list <- read.table("reference_table2_final_path.txt",sep="\t",header=T)
+
+
+check_list$sp = "unknown"
+
+datasheet = read.csv("database_sheet1.csv")
+
+#####
+#####
+
+for(i in 1:length(check_list$PMID)){
+	tmp = check_list$PMID[i]
+	m = match(tmp,datasheet$PMID)
+	if(length(m) == 1){
+		check_list$sp[i] = datasheet$species[m]
+	}
+}
+
+#####
+#####
+#####
+#####
+
+library(writexl)
+write_xlsx(check_list,path="check_list3.xlsx")
+
+
+
+#####
+#####
+#####
+#####
+
 
 ssh plyu3@omb2.onc.jhmi.edu
 U[9C20&&
@@ -66,10 +109,8 @@ write_xlsx(check_list2,path="check_list2.xlsx")
 ###### Next we will reduce the number of cells for each sample for each cell type !! ########
 ###### Then we will prepare the python object to check the results !!!! #####################
 ######
-######
-
-
 ###### See the basic format of the seurat objects ######
+######
 
 
 
@@ -152,6 +193,8 @@ check_process_Step2(check_list,list_number=214:439)
 #####
 
 library(Seurat)
+setwd("/zp1/data/plyu3/CellAnn_final_check")
+check_list <- read.table("reference_table2_final_path.txt",sep="\t",header=T)
 
 check_process_Step3 <- function(check_list,list_number=1:439){
 	######
@@ -185,12 +228,18 @@ check_process_Step3 <- function(check_list,list_number=1:439){
 }
 
 
+check_process_Step3(check_list,list_number=1:439)
+
 #####
 ##### let us test in python whether we can read the file !!! #######
 #####
 
-conda activate scvi-env
 
+ssh plyu3@omb2.onc.jhmi.edu
+U[9C20&&
+
+
+conda activate scvi-env
 python
 
 import subprocess
@@ -201,32 +250,53 @@ import pandas as pd
 import scanpy as sc
 import scvi
 import anndata
+import scipy.io as sio
+import copy
 
-os.chdir("/home/plyu3/cell_ann_part_datasets1/27565351_scRNA_Mouse Retinal Bipolar Neuron")
+os.chdir("/zp1/data/plyu3/CellAnn_final_check/Test_datasets")
 
-expression_matrix = pd.read_csv("expression_matrix.csv", index_col=0)
-cell_metadata = pd.read_csv("cell_metadata.csv", index_col=0)
-gene_metadata = pd.read_csv("gene_metadata.csv", index_col=0)
+expression_matrix = anndata.read_mtx("Bladder_example_expression_matrix.mtx")
+cell_metadata = pd.read_csv("Bladder_example_cell_metadata.csv", index_col=0)
+gene_metadata = pd.read_csv("Bladder_example_gene_metadata.csv", index_col=0)
 
-anndata_obj = anndata.AnnData(X=expression_matrix.values, obs=cell_metadata, var=gene_metadata)
+anndata_obj = copy.deepcopy(expression_matrix)
+anndata_obj.obs = cell_metadata
+anndata_obj.var['gene_name'] = gene_metadata['x']
 
 ######
+###### Note that this dataset has the counts already separated in a layer. Here, adata.X contains log transformed scran normalized expression.
 ######
+## red ##
+## red ##
+## red ##
+#sc.pp.normalize_total(anndata_obj, target_sum=1e6)
+#sc.pp.log1p(anndata_obj)
+
+#UserWarning: `flavor='seurat_v3'` expects raw count data
 anndata_obj.layers["counts"] = anndata_obj.X
-anndata_obj.obs['batch'] = "batch1"
+
+#count_mat = anndata_obj.layers["counts"].toarray() 
+
+#anndata_obj.obs["batch"]
+
+####### 
 
 sc.pp.highly_variable_genes(
         anndata_obj,
         flavor="seurat_v3",
-        n_top_genes=2000,
+        n_top_genes=3000,
         layer="counts",
         batch_key="batch",
         subset=True
 ) 
 
-
+#######
 scvi.model.SCVI.setup_anndata(anndata_obj, layer="counts", batch_key="batch")
 vae = scvi.model.SCVI(anndata_obj, n_layers=2, n_latent=30, gene_likelihood="nb")
+
+vae.train()
+
+corrected_data_vae = vae.get_normalized_expression()
 
 lvae = scvi.model.SCANVI.from_scvi_model(
         vae,
@@ -235,16 +305,104 @@ lvae = scvi.model.SCANVI.from_scvi_model(
         unlabeled_category="Unknown",
 )
 
+lvae.train(max_epochs=20, n_samples_per_label=100)
+
+
+corrected_data_lvae = lvae.get_normalized_expression()
+
+
+######
+######
+
 anndata_obj.obsm["X_scANVI"] = lvae.get_latent_representation(anndata_obj)
 
+###### pip install pymde
+from scvi.model.utils import mde
+
+anndata_obj.obsm["X_mde_scanvi"] = mde(anndata_obj.obsm["X_scANVI"])
+
+###### temp save it as the pkl file: ########
+######
+
+import pickle
+
+with open("anndata_obj.pkl", "wb") as f:
+    pickle.dump(anndata_obj, f)
+
+
+with open("anndata_obj.pkl", "rb") as f:
+    loaded_anndata = pickle.load(f)
+
+import copy
+
+anndata_obj = copy.deepcopy(loaded_anndata)
+
+###### let us plot the figures !!! ########
+
+#width = 16  # Change this value to the desired width in inches
+#height = 8  # Change this value to the desired height in inches
+#plt.figure(figsize=(width, height))
+
+
+sc.pl.embedding(
+    anndata_obj,
+    basis="X_mde_scanvi",
+    color="celltype",
+    frameon=False,
+    save='celltype.png'
+)
+
+
+###### great the class tag is leiden !!! ########
+
+
+
+###### Next get new cell clusters !!!! #########
+######
+
+sc.pp.neighbors(anndata_obj, use_rep="X_scANVI")
+sc.tl.leiden(anndata_obj)
+
+
+sc.pl.embedding(
+    anndata_obj,
+    basis="X_mde_scanvi",
+    color="leiden",
+    frameon=False,
+    save='leiden.png'
+)
+
+
+
+sc.pl.embedding(
+    anndata_obj,
+    basis="X_mde_scanvi",
+    color="_scvi_labels",
+    frameon=False,
+    save='scvi_labels.png'
+)
+######
+######
+
 anndata_obj_scANVI = pd.DataFrame(anndata_obj.obsm['X_scANVI'])
-
-anndata_obj_scANVI.add_prefix('SCANVI_')
-
+anndata_obj_scANVI = anndata_obj_scANVI.add_prefix('SCANVI_')
 Cellnames = list(pd.DataFrame(anndata_obj.obs['_scvi_batch']).index)
-anndata_obj_scANVI['Cell_ID'] = Cellnames
 
+anndata_obj_scANVI['Cell_ID'] = Cellnames
 anndata_obj_scANVI.to_csv(file_output, sep="\t",index=False)
+
+
+anndata_obj_meta = pd.DataFrame(anndata_obj.obs)
+file_output = "test_meta.csv"
+anndata_obj_meta.to_csv(file_output, sep="\t",index=False)
+
+#####
+##### OK!!! Next we will output corrected matrix !!!! ##########
+#####
+
+anndata_obj.X.toarray() 
+anndata_obj.layers['counts'].toarray() 
+
 
 
 #####
@@ -255,6 +413,127 @@ anndata_obj_scANVI.to_csv(file_output, sep="\t",index=False)
 #####
 ##### we need testdatasets to go through the pipline !!! #######
 #####
+##### see the seurat examples in the old computer #####
+#####
+
+##### we will test the example integrate matrix !!! ###
+#####
+##### 先大概看一下 subset 和 integrate 的 情况 ！！！ #####
+#####
+
+##### 先loading以下datasets ！！！ ########
+#####
+
+ssh plyu3@omb2.onc.jhmi.edu
+U[9C20&&
+
+conda activate seurat4
+
+R
+
+setwd("/zp1/data/plyu3/CellAnn_final_check/Test_datasets")
+
+load("droplet_seurat_merge")
+
+load("facs_seurat_merge")
+
+###### see the meta data ###############
+
+head(droplet_seurat_merge@meta.data)
+
+table(droplet_seurat_merge$tissue)
+
+table(facs_seurat_merge$tissue)
+
+###### extract facs Bladder ############
+
+Bladder_facs_seurat_merge <- facs_seurat_merge[,which(facs_seurat_merge$tissue == "Bladder")]
+
+###### OK!!! count matrix ##############
+
+Bladder_facs_seurat_merge[['RNA']]@counts
+
+droplet_seurat_merge[['RNA']]@counts
+
+######
+###### OK!!! let us merge the matrix ####
+###### 
+batch_list = c("batch_sub","batch_background")
+
+x = Bladder_facs_seurat_merge
+y = droplet_seurat_merge
+
+tag = c('Bladder_example_')
+
+Output_py_matrix_test <- function(x,y,batch_list,tag){
+	#########
+	mat_x = x[['RNA']]@counts
+	mat_y = y[['RNA']]@counts
+	#########
+	overlap_G = rownames(mat_x)[which(rownames(mat_x) %in% rownames(mat_y) == T)]
+	#########
+	mat_x_cl = mat_x[which(rownames(mat_x) %in% overlap_G == T),]
+	mat_y_cl = mat_y[which(rownames(mat_y) %in% overlap_G == T),]
+	########
+	match_x = match(overlap_G,rownames(mat_x_cl))
+	match_y = match(overlap_G,rownames(mat_y_cl))
+	#########
+	mat_x_cl_s = mat_x_cl[match_x,]
+	mat_y_cl_s = mat_y_cl[match_y,]
+	##########
+	all.equal(rownames(mat_x_cl_s),rownames(mat_y_cl_s))
+	########## Next we will add cell meta #####
+	cell_meta_x = x@meta.data[,c('tissue','celltype')]
+	cell_meta_x$cell_id = rownames(cell_meta_x)
+	##########
+	cell_meta_y = y@meta.data[,c('tissue','celltype')]
+	cell_meta_y$cell_id = rownames(cell_meta_y)
+	##########
+	cell_meta_x$batch = batch_list[1]
+	cell_meta_y$batch = batch_list[2]
+	##########
+	cell_meta_x$celltype = paste0('sample_',cell_meta_x$celltype)
+	cell_meta_y$celltype = paste0('back_',cell_meta_y$celltype)
+	##########
+	mat_combined = cbind(mat_x_cl_s,mat_y_cl_s)
+	cell_meta_combined = rbind(cell_meta_x,cell_meta_y)
+	##########
+	all.equal(colnames(mat_combined),cell_meta_combined$cell_id)
+	##########
+	mat_file_name = paste0(tag,"expression_matrix.mtx")
+	cell_file_name = paste0(tag,"cell_metadata.csv")
+	gene_file_name = paste0(tag,"gene_metadata.csv")
+	#########
+	library(Seurat)
+	library(Matrix)
+	writeMM(Matrix::t(mat_combined), file = mat_file_name, row.names = TRUE)
+	write.csv(cell_meta_combined, file = cell_file_name, row.names = TRUE)
+	write.csv(rownames(mat_combined), file = gene_file_name, row.names = TRUE)
+	#########
+}
+
+#############
+#############
+
+setwd("/zp1/data/plyu3/CellAnn_final_check/Test_datasets")
+
+Output_py_matrix_test(x=Bladder_facs_seurat_merge,y=droplet_seurat_merge,batch_list,tag="Bladder_example_")
+
+#############
+############# Next test it in python ############
+#############
+
+输出30dim
+输出UMAP
+输出cluster
+输出Matrix
+
+############# set it in python ###################
+#############
+
+
+############# 然后就是 subset reference ###########
+#############
 
 
 
