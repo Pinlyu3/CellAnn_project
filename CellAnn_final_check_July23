@@ -255,9 +255,9 @@ import copy
 
 os.chdir("/zp1/data/plyu3/CellAnn_final_check/Test_datasets")
 
-expression_matrix = anndata.read_mtx("Bladder_example_expression_matrix.mtx")
-cell_metadata = pd.read_csv("Bladder_example_cell_metadata.csv", index_col=0)
-gene_metadata = pd.read_csv("Bladder_example_gene_metadata.csv", index_col=0)
+expression_matrix = anndata.read_mtx("Bladder_example_cl_expression_matrix.mtx")
+cell_metadata = pd.read_csv("Bladder_example_cl_cell_metadata.csv", index_col=0)
+gene_metadata = pd.read_csv("Bladder_example_cl_gene_metadata.csv", index_col=0)
 
 anndata_obj = copy.deepcopy(expression_matrix)
 anndata_obj.obs = cell_metadata
@@ -307,6 +307,8 @@ lvae = scvi.model.SCANVI.from_scvi_model(
 
 lvae.train(max_epochs=20, n_samples_per_label=100)
 
+######
+######
 
 corrected_data_lvae = lvae.get_normalized_expression()
 
@@ -347,9 +349,9 @@ anndata_obj = copy.deepcopy(loaded_anndata)
 sc.pl.embedding(
     anndata_obj,
     basis="X_mde_scanvi",
-    color="celltype",
+    color="batch",
     frameon=False,
-    save='celltype.png'
+    save='batch_cl.png'
 )
 
 
@@ -369,7 +371,7 @@ sc.pl.embedding(
     basis="X_mde_scanvi",
     color="leiden",
     frameon=False,
-    save='leiden.png'
+    save='leiden_1.png'
 )
 
 
@@ -420,7 +422,6 @@ anndata_obj.layers['counts'].toarray()
 #####
 ##### 先大概看一下 subset 和 integrate 的 情况 ！！！ #####
 #####
-
 ##### 先loading以下datasets ！！！ ########
 #####
 
@@ -434,7 +435,6 @@ R
 setwd("/zp1/data/plyu3/CellAnn_final_check/Test_datasets")
 
 load("droplet_seurat_merge")
-
 load("facs_seurat_merge")
 
 ###### see the meta data ###############
@@ -455,9 +455,12 @@ Bladder_facs_seurat_merge[['RNA']]@counts
 
 droplet_seurat_merge[['RNA']]@counts
 
+
 ######
 ###### OK!!! let us merge the matrix ####
-###### 
+######
+
+
 batch_list = c("batch_sub","batch_background")
 
 x = Bladder_facs_seurat_merge
@@ -534,6 +537,460 @@ Output_py_matrix_test(x=Bladder_facs_seurat_merge,y=droplet_seurat_merge,batch_l
 
 ############# 然后就是 subset reference ###########
 #############
+
+
+
+############# let us filter the altas cells and see the results again ####
+#############
+#############
+setwd("/zp1/data/plyu3/CellAnn_final_check/Test_datasets")
+
+load("droplet_seurat_merge")
+
+droplet_seurat_merge$index = paste0(droplet_seurat_merge$tissue,"~~",droplet_seurat_merge$celltype)
+
+altas_seurat = droplet_seurat_merge
+
+check_process_Step_altas <- function(altas_seurat){
+	######
+	###### the index tag for altas_seurat ######
+	######
+	table_ct = data.frame(table(altas_seurat$index))
+	######
+	table_ct = table_ct[which(table_ct$Freq > 0),]
+	######
+	tmp_cells_all = c()
+	######
+	tmp_mat = altas_seurat[['RNA']]@counts
+	######
+	tmp_seurat = CreateSeuratObject(tmp_mat)
+	tmp_seurat$index = altas_seurat$index
+	tmp_seurat$cell_id = colnames(tmp_seurat)
+	for(j in 1:length(table_ct$Var1)){
+			tmp_ct_name = as.character(table_ct$Var1[j])
+			tmp_ct_num = table_ct$Freq[j]
+			######
+			tmp_ct_seurat = tmp_seurat[,which(tmp_seurat$index == tmp_ct_name)]
+			######
+			if(tmp_ct_num > 500){
+				#### half half ####
+				delta = round(tmp_ct_num - 500)/2
+				tmp_ct_seurat_cell_tab = tmp_ct_seurat@meta.data[,c('nCount_RNA','cell_id')]
+				tmp_ct_seurat_cell_tab = tmp_ct_seurat_cell_tab[order(tmp_ct_seurat_cell_tab$nCount_RNA),]
+				####
+				cell_index = tmp_ct_seurat_cell_tab$cell_id[c(delta+1):c(length(tmp_ct_seurat_cell_tab$cell_id)-delta)]
+				####
+				tmp_ct_seurat_sub = tmp_ct_seurat[,which(tmp_ct_seurat$cell_id %in% cell_index == T)]
+				tmp_cells_all = c(tmp_cells_all,tmp_ct_seurat_sub$cell_id)
+			}
+			if(tmp_ct_num < 501){
+				tmp_ct_seurat_sub = tmp_ct_seurat
+				tmp_cells_all = c(tmp_cells_all,tmp_ct_seurat_sub$cell_id)
+			}
+			table_ct$Freq_new[j] = dim(tmp_ct_seurat_sub)[2]
+	}
+	######
+	tmp_seurat_new = tmp_seurat[,which(tmp_seurat$cell_id %in% tmp_cells_all == T)]
+	###### new seurat ###
+	return(tmp_seurat_new)
+}
+
+droplet_seurat_merge_cl = check_process_Step_altas(droplet_seurat_merge)
+
+###########
+###########
+
+setwd("/zp1/data/plyu3/CellAnn_final_check/Test_datasets")
+saveRDS(droplet_seurat_merge_cl,file='droplet_seurat_merge_cl')
+
+droplet_seurat_merge_cl$tissue = sapply(strsplit(droplet_seurat_merge_cl$index,split='~~'),function(x) x[[1]])
+droplet_seurat_merge_cl$celltype = sapply(strsplit(droplet_seurat_merge_cl$index,split='~~'),function(x) x[[2]])
+
+setwd("/zp1/data/plyu3/CellAnn_final_check/Test_datasets")
+saveRDS(droplet_seurat_merge_cl,file='droplet_seurat_merge_cl')
+
+###########
+########### output to the python input ######
+###########
+batch_list = c("batch_sub","batch_background")
+
+x = Bladder_facs_seurat_merge
+y = droplet_seurat_merge_cl
+
+tag = c('Bladder_example_cl_')
+
+setwd("/zp1/data/plyu3/CellAnn_final_check/Test_datasets")
+Output_py_matrix_test(x=Bladder_facs_seurat_merge,y=droplet_seurat_merge_cl,batch_list,tag="Bladder_example_cl_")
+
+###########
+########### OK!!! Let us try python code !!!! #####
+###########
+
+###########
+###########
+
+########### OK!!! Next cleaned Bladder_facs_seurat_merge with droplet_seurat_merge_cl ###
+###########
+
+folder = "/zp1/data/plyu3/Altas_add_CellAnn/Tabula_Muris_Senis_Smartseq2/bladder_lumenSmartseq2"
+
+TAG = 'M_Tabula_Muris'
+
+###########
+###########
+
+Merge_datasets <- function(folder,TAG){
+	##########
+	setwd(folder)
+	##########
+	files = list.files()
+	##########
+	ref_seurat = files[grep("_new_clean$",files)]
+	ref_seurat_obj = readRDS(ref_seurat)
+	##########
+	tag = gsub("_seurat_obj_new_clean","",ref_seurat)
+	##########
+	if(TAG == 'M_Tabula_Muris'){
+		back_seurat = readRDS("/zp1/data/plyu3/CellAnn_final_check/Test_datasets/droplet_seurat_merge_cl")
+		#######
+		#######
+		tag2 = paste0(tag,"__",TAG)
+		batch_list = c("batch_sub","batch_background")
+		setwd(folder)
+		Output_py_matrix_test(x=ref_seurat_obj,y=back_seurat,batch_list,tag=tag2)
+	}
+	######
+}
+
+
+########### Let us try python script !!!! #########
+###########
+
+ssh plyu3@omb2.onc.jhmi.edu
+U[9C20&&
+
+############
+
+
+conda activate scvi-env
+python
+
+import subprocess
+import argparse
+import os
+import re
+import pandas as pd
+import scanpy as sc
+import scvi
+import anndata
+import scipy.io as sio
+import copy
+
+folder = "/zp1/data/plyu3/Altas_add_CellAnn/Tabula_Muris_Senis_Smartseq2/bladder_lumenSmartseq2"
+os.chdir(folder)
+
+#### list files and load the datasets ######
+
+def load_anndata_from_folder_tag(folder):
+	#######
+	os.chdir(folder)
+	files_in_folder = os.listdir(folder)
+	file_pattern_2 = r'__.+expression_matrix.mtx'
+	#######
+	matching_elements_2 = [element for element in files_in_folder if re.search(file_pattern_2, element)]
+	#######
+	new_string = re.sub(r'expression_matrix.mtx', "", matching_elements_2[0])
+	#######
+	return new_string
+
+
+def load_anndata_from_folder(folder):
+	os.chdir(folder)
+	files_in_folder = os.listdir(folder)
+	#######
+	file_pattern_1 = r'__.+cell_metadata.csv'
+	file_pattern_2 = r'__.+expression_matrix.mtx'
+	file_pattern_3 = r'__.+gene_metadata.csv'
+	#######
+	matching_elements_1 = [element for element in files_in_folder if re.search(file_pattern_1, element)]
+	matching_elements_2 = [element for element in files_in_folder if re.search(file_pattern_2, element)]
+	matching_elements_3 = [element for element in files_in_folder if re.search(file_pattern_3, element)]
+	#######
+	expression_matrix = anndata.read_mtx(matching_elements_2[0])
+	cell_metadata = pd.read_csv(matching_elements_1[0], index_col=0)
+	gene_metadata = pd.read_csv(matching_elements_3[0], index_col=0)
+	#######
+	anndata_obj = copy.deepcopy(expression_matrix)
+	anndata_obj.obs = cell_metadata
+	anndata_obj.var['gene_name'] = gene_metadata['x'].tolist()
+	######
+	return anndata_obj
+
+
+
+#######
+#######
+anndata_obj_name = load_anndata_from_folder_tag(folder)
+anndata_obj = load_anndata_from_folder(folder)
+
+
+#######
+#######
+#######
+
+
+def Process_anndatasets(anndata_obj,anndata_obj_name):
+	### Get vae and lave ###
+	anndata_obj.layers["counts"] = anndata_obj.X
+	###
+	sc.pp.highly_variable_genes(
+        anndata_obj,
+        flavor="seurat_v3",
+        n_top_genes=3000,
+        layer="counts",
+        batch_key="batch",
+        subset=True
+	)
+	###
+	scvi.model.SCVI.setup_anndata(anndata_obj, layer="counts", batch_key="batch")
+	vae = scvi.model.SCVI(anndata_obj, n_layers=2, n_latent=30, gene_likelihood="nb")
+	vae.train()
+	###
+	lvae = scvi.model.SCANVI.from_scvi_model(
+        vae,
+        adata=anndata_obj,
+        labels_key="celltype",
+        unlabeled_category="Unknown",
+	)
+	###
+	lvae.train(max_epochs=20, n_samples_per_label=100)
+	###
+	anndata_obj.obsm["X_scANVI"] = lvae.get_latent_representation(anndata_obj)
+	###
+	### next perform cluster analysis ###
+	###
+	from scvi.model.utils import mde
+	anndata_obj.obsm["X_mde_scanvi"] = mde(anndata_obj.obsm["X_scANVI"])
+	###
+	### output the celltype,batch and cluster plot !!! #######
+	###
+	FN1 = anndata_obj_name + '_batch.png'
+	sc.pl.embedding(
+    	anndata_obj,
+    	basis="X_mde_scanvi",
+    	color="batch",
+    	frameon=False,
+    	save=FN1
+	)
+	###
+	FN2 = anndata_obj_name + '_celltype.png'
+	sc.pl.embedding(
+    	anndata_obj,
+    	basis="X_mde_scanvi",
+    	color="celltype",
+    	frameon=False,
+    	save=FN2
+	)
+	###
+	sc.pp.neighbors(anndata_obj, use_rep="X_scANVI")
+	sc.tl.leiden(anndata_obj)
+	###
+	FN3 = anndata_obj_name + '_cluster.png'
+	sc.pl.embedding(
+    	anndata_obj,
+    	basis="X_mde_scanvi",
+    	color="leiden",
+    	frameon=False,
+    	save=FN3
+	)
+	### Next output the meta data and the corrected matrix ###
+	###
+	corrected_data_lvae = lvae.get_normalized_expression()
+	###
+	### output corrected matrix #####
+	### mtx,gene and cells ##########
+	### type(corrected_data_lvae) ###
+	corrected_data_lvae_array = corrected_data_lvae.values
+	###
+	import numpy as np
+	from scipy.sparse import csr_matrix
+	from scipy.io import mmwrite
+	matrix = csr_matrix(corrected_data_lvae_array)
+	###
+	FN4 = anndata_obj_name + '_backmergeCorrect.mtx'
+	mmwrite(FN4, matrix)
+	###
+	FN5 = anndata_obj_name + '_backmergeCorrect_Cells.csv'
+	###
+	### Cells = corrected_data_lvae.index.values.tolist()
+	###
+	Cells_meta = anndata_obj.obs
+	###
+	#Cells2 = Cells_meta.index.values.tolist()
+	###
+	#Cells == Cells2
+	####
+	Cells_meta.to_csv(FN5,index=False)
+	####
+	FN6 = anndata_obj_name + '_backmergeCorrect_Genes.csv'
+	####
+	Gene = anndata_obj.var['gene_name'].to_frame()
+	####
+	Gene.to_csv(FN6)
+	####
+	#### Next save tbe anndatasets ##########
+	####
+	import pickle
+	FN7 = anndata_obj_name + '_backmergeCorrect.pkl'
+	with open(FN7, "wb") as f:
+    	pickle.dump(anndata_obj, f)
+	#####
+	print('Done!')
+
+
+
+######
+######
+######
+
+
+
+
+
+
+
+
+
+######
+###### Note that this dataset has the counts already separated in a layer. Here, adata.X contains log transformed scran normalized expression.
+######
+## red ##
+## red ##
+## red ##
+#sc.pp.normalize_total(anndata_obj, target_sum=1e6)
+#sc.pp.log1p(anndata_obj)
+
+#UserWarning: `flavor='seurat_v3'` expects raw count data
+anndata_obj.layers["counts"] = anndata_obj.X
+
+#count_mat = anndata_obj.layers["counts"].toarray() 
+
+#anndata_obj.obs["batch"]
+
+####### 
+
+sc.pp.highly_variable_genes(
+        anndata_obj,
+        flavor="seurat_v3",
+        n_top_genes=3000,
+        layer="counts",
+        batch_key="batch",
+        subset=True
+) 
+
+#######
+scvi.model.SCVI.setup_anndata(anndata_obj, layer="counts", batch_key="batch")
+vae = scvi.model.SCVI(anndata_obj, n_layers=2, n_latent=30, gene_likelihood="nb")
+
+vae.train()
+
+corrected_data_vae = vae.get_normalized_expression()
+
+lvae = scvi.model.SCANVI.from_scvi_model(
+        vae,
+        adata=anndata_obj,
+        labels_key="celltype",
+        unlabeled_category="Unknown",
+)
+
+lvae.train(max_epochs=20, n_samples_per_label=100)
+
+######
+######
+
+corrected_data_lvae = lvae.get_normalized_expression()
+
+
+######
+######
+
+anndata_obj.obsm["X_scANVI"] = lvae.get_latent_representation(anndata_obj)
+
+###### pip install pymde
+from scvi.model.utils import mde
+
+anndata_obj.obsm["X_mde_scanvi"] = mde(anndata_obj.obsm["X_scANVI"])
+
+###### temp save it as the pkl file: ########
+######
+
+import pickle
+
+with open("anndata_obj.pkl", "wb") as f:
+    pickle.dump(anndata_obj, f)
+
+
+with open("anndata_obj.pkl", "rb") as f:
+    loaded_anndata = pickle.load(f)
+
+import copy
+
+anndata_obj = copy.deepcopy(loaded_anndata)
+
+###### let us plot the figures !!! ########
+
+#width = 16  # Change this value to the desired width in inches
+#height = 8  # Change this value to the desired height in inches
+#plt.figure(figsize=(width, height))
+
+
+sc.pl.embedding(
+    anndata_obj,
+    basis="X_mde_scanvi",
+    color="batch",
+    frameon=False,
+    save='batch_cl.png'
+)
+
+
+###### great the class tag is leiden !!! ########
+
+
+
+###### Next get new cell clusters !!!! #########
+######
+
+sc.pp.neighbors(anndata_obj, use_rep="X_scANVI")
+sc.tl.leiden(anndata_obj)
+
+
+sc.pl.embedding(
+    anndata_obj,
+    basis="X_mde_scanvi",
+    color="leiden",
+    frameon=False,
+    save='leiden_1.png'
+)
+
+
+
+sc.pl.embedding(
+    anndata_obj,
+    basis="X_mde_scanvi",
+    color="_scvi_labels",
+    frameon=False,
+    save='scvi_labels.png'
+)
+
+
+
+
+import sys
+custom_module_path = '/zp1/data/plyu3/CellAnn_final_check/module'
+sys.path.append(custom_module_path)
+
+
+import cellann_final
 
 
 
