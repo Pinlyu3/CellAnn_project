@@ -192,9 +192,34 @@ check_process_Step2(check_list,list_number=214:439)
 ##### Next convert to python format scvi piplines ##############
 #####
 
+ssh plyu3@omb2.onc.jhmi.edu
+U[9C20&&
+
+#####
+#####
+conda activate seurat4
+R
+setwd("/zp1/data/plyu3/CellAnn_final_check")
+
+#####
+#####
+
 library(Seurat)
 setwd("/zp1/data/plyu3/CellAnn_final_check")
 check_list <- read.table("reference_table2_final_path.txt",sep="\t",header=T)
+
+##### blue #######
+##### blue #######
+##### blue #######
+##### blue #######
+##### blue #######
+##### blue #######
+##### blue #######
+##### blue #######
+##### blue #######
+
+
+
 
 check_process_Step3 <- function(check_list,list_number=1:439){
 	######
@@ -983,26 +1008,255 @@ sc.pl.embedding(
 )
 
 
-
+#### red ####
+#### red ####
+#### red ####
 
 import sys
 custom_module_path = '/zp1/data/plyu3/CellAnn_final_check/module'
 sys.path.append(custom_module_path)
 
+import cellann_final
+import os
+
+folder = "/zp1/data/plyu3/Altas_add_CellAnn/Tabula_Muris_Senis_Smartseq2/bladder_lumenSmartseq2"
+os.chdir(folder)
+
+anndata_obj_name = cellann_final.load_anndata_from_folder_tag(folder)
+anndata_obj = cellann_final.load_anndata_from_folder(folder)
+
+#### red ######
+#### red ######
+#### red ######
+
+cellann_final.Process_anndatasets(anndata_obj,anndata_obj_name)
+
+##### Step1 is the one which #####
+##### yellow #####
+##### blue #####
+##### green #####
+
+##### let us run the final piplines !!!! ######
+
+ssh plyu3@omb2.onc.jhmi.edu
+U[9C20&&
+
+##### prepare the samples list ######
+
+conda activate seurat4
+R
+
+#####
+
+setwd("/zp1/data/plyu3/CellAnn_final_check")
+
+library(readxl)
+
+data <- data.frame(read_xlsx("check_list3.xlsx"))
+
+data_list <- data
+
+##### 
+##### list #######
+#####
+
+i_index = which(data_list$Background == 'M_Tabula_Muris')
+
+######
+###### let us merge the files with background files ########
+######
+
+file_list = data_list
+
+Step1_merge_sample_cl_with_back <- function(file_list,i_index){
+	######## return will be update the file_list file ##########
+	######## loop each samples ########
+	for(i in i_index){
+		print(i)
+		##### "Folder" #####
+		folder = file_list$Folder[i]
+		##### setwd ########
+		setwd(folder)
+		##### TAG ##########
+		TAG = file_list$Background[i]
+		#####
+		tag = Merge_datasets(folder,TAG)
+		#####
+		file_list$TAG[i] = tag
+	}
+	###########
+	return(file_list)
+}
+
+Merge_datasets <- function(folder,TAG){
+	##########
+	setwd(folder)
+	##########
+	files = list.files()
+	##########
+	ref_seurat = files[grep("_new_clean$",files)]
+	ref_seurat_obj = readRDS(ref_seurat)
+	##########
+	tag = gsub("_seurat_obj_new_clean","",ref_seurat)
+	##########
+	if(TAG == 'M_Tabula_Muris'){
+		back_seurat = readRDS("/zp1/data/plyu3/CellAnn_final_check/Test_datasets/droplet_seurat_merge_cl")
+		#######
+		#######
+		tag2 = paste0(tag,"__",TAG)
+		batch_list = c("batch_sub","batch_background")
+		setwd(folder)
+		Output_py_matrix_test(x=ref_seurat_obj,y=back_seurat,batch_list,tag=tag2)
+	}
+	if(TAG == 'MCL'){
+		
+	}
+	######
+	return(tag)
+}
+
+Merge_datasets_Lite <- function(folder,TAG){
+	##########
+	setwd(folder)
+	files = list.files()
+	##########
+	ref_seurat = files[grep("_new_clean$",files)]
+	ref_seurat_obj = readRDS(ref_seurat)
+	##########
+	tag = gsub("_seurat_obj_new_clean","",ref_seurat)
+	######
+	return(tag)
+}
+
+Output_py_matrix_test <- function(x,y,batch_list,tag){
+	#########
+	mat_x = x[['RNA']]@counts
+	mat_y = y[['RNA']]@counts
+	#########
+	overlap_G = rownames(mat_x)[which(rownames(mat_x) %in% rownames(mat_y) == T)]
+	#########
+	mat_x_cl = mat_x[which(rownames(mat_x) %in% overlap_G == T),]
+	mat_y_cl = mat_y[which(rownames(mat_y) %in% overlap_G == T),]
+	########
+	match_x = match(overlap_G,rownames(mat_x_cl))
+	match_y = match(overlap_G,rownames(mat_y_cl))
+	#########
+	mat_x_cl_s = mat_x_cl[match_x,]
+	mat_y_cl_s = mat_y_cl[match_y,]
+	##########
+	all.equal(rownames(mat_x_cl_s),rownames(mat_y_cl_s))
+	########## Next we will add cell meta #####
+	cell_meta_x = x@meta.data[,c('tissue','celltype')]
+	cell_meta_x$cell_id = rownames(cell_meta_x)
+	##########
+	cell_meta_y = y@meta.data[,c('tissue','celltype')]
+	cell_meta_y$cell_id = rownames(cell_meta_y)
+	##########
+	cell_meta_x$batch = batch_list[1]
+	cell_meta_y$batch = batch_list[2]
+	##########
+	cell_meta_x$celltype = paste0('sample_',cell_meta_x$celltype)
+	cell_meta_y$celltype = paste0('back_',cell_meta_y$celltype)
+	##########
+	mat_combined = cbind(mat_x_cl_s,mat_y_cl_s)
+	cell_meta_combined = rbind(cell_meta_x,cell_meta_y)
+	##########
+	all.equal(colnames(mat_combined),cell_meta_combined$cell_id)
+	##########
+	mat_file_name = paste0(tag,"expression_matrix.mtx")
+	cell_file_name = paste0(tag,"cell_metadata.csv")
+	gene_file_name = paste0(tag,"gene_metadata.csv")
+	#########
+	library(Seurat)
+	library(Matrix)
+	writeMM(Matrix::t(mat_combined), file = mat_file_name, row.names = TRUE)
+	write.csv(cell_meta_combined, file = cell_file_name, row.names = TRUE)
+	write.csv(rownames(mat_combined), file = gene_file_name, row.names = TRUE)
+	#########
+}
+
+Step1_merge_sample_cl_with_back(file_list,i_index)
+
+##### then we will write the excel files for this file #####
+##### forget these #########################################
+
+Step1_merge_sample_cl_with_back_Lite <- function(file_list,i_index){
+	######## return will be update the file_list file ##########
+	######## loop each samples ########
+	for(i in i_index){
+		print(i)
+		##### "Folder" #####
+		folder = file_list$Folder[i]
+		##### setwd ########
+		setwd(folder)
+		##### TAG ##########
+		TAG = file_list$Background[i]
+		#####
+		tag = Merge_datasets_Lite(folder,TAG)
+		#####
+		file_list$TAG[i] = tag
+	}
+	###########
+	return(file_list)
+}
+
+file_list_new <- Step1_merge_sample_cl_with_back_Lite(file_list,i_index)
+
+library(writexl)
+
+setwd("/zp1/data/plyu3/CellAnn_final_check")
+
+write_xlsx(file_list_new, path = "check_list3_update1.xlsx")
+
+####### 
+####### Next is the python piplines      ###########
+####### Input is file and the filter tag ###########
+####### Input is an excel file, and a filter tag ! #
+#######
+
+####### then go for a loop for each datasets ######
+####### Output these results ######################
+####### python read excel then loop then a simple script #####
+
+ssh plyu3@omb2.onc.jhmi.edu
+U[9C20&&
+
+conda activate scvi-env
+python
+
+import pandas as pd
+import os
+
+file_list_path = "/zp1/data/plyu3/CellAnn_final_check/check_list3_update1.xlsx"
+df = pd.read_excel(file_list_path)
+
+df_cl = df[df['Background'] == 'M_Tabula_Muris']
+
+df_cl.columns
+
+file_need_path_all = df_cl['Folder'].tolist()
+
+####### next process each folder #########
+
+import sys
+custom_module_path = '/zp1/data/plyu3/CellAnn_final_check/module'
+sys.path.append(custom_module_path)
 
 import cellann_final
+import os
+
+for file_need_path in file_need_path_all:
+	print(file_need_path)
+	#### change the dir now !!!! ####
+	os.chdir(file_need_path)
+	anndata_obj_name = cellann_final.load_anndata_from_folder_tag(file_need_path)
+	anndata_obj = cellann_final.load_anndata_from_folder(file_need_path)
+	####
+	cellann_final.Process_anndatasets(anndata_obj,anndata_obj_name)
 
 
-
-
-
-
-
-
-
-
-
-
+#######
+print("All Done!!!")
 
 
 
