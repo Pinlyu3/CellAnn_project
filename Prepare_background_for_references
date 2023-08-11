@@ -597,7 +597,7 @@ CellAnn_Module_get_compared_list <- function(query_data_matrix,tmp_BB_mat,tmp_BF
 ####
 #### red red red red red red #####
 ####
-
+####
 
 CellAnn_Module_get_compared_list2 <- function(query_data_matrix,tmp_BF_mat,tmp_DEG_mat,Num=25){
 	####### we have 3 matrics #####
@@ -864,7 +864,6 @@ CellAnn_Module_merge_list <- function(Cor_input_list){
 
 #################
 #################
-
 
 CellAnn_Module_1 <- function(query_data_matrix,reference_index,reference_prepare_table1,reference_folder){
 	######### first we will get the gene matrix of reference_index ###########

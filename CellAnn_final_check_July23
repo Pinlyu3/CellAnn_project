@@ -1109,7 +1109,7 @@ Merge_datasets <- function(folder,TAG){
 		Output_py_matrix_test(x=ref_seurat_obj,y=back_seurat,batch_list,tag=tag2)
 	}
 	if(TAG == 'MCL'){
-		
+
 	}
 	######
 	return(tag)
@@ -1257,6 +1257,437 @@ for file_need_path in file_need_path_all:
 
 #######
 print("All Done!!!")
+
+
+
+####### pink ######
+####### pink
+####### pink
+####### pink
+#######
+####### OK!!! Next we will prepare MCA datasets !!!! #######
+####### first find the MCA code !!!! #######################
+#######
+ssh plyu3@omb2.onc.jhmi.edu
+U[9C20&&
+
+conda activate seurat4
+R
+
+library(SeuratDisk)
+setwd("/zp1/data/plyu3/Altas_add_CellAnn/MCA1.1")
+
+seuratObject <- LoadH5Seurat("MCA1.1_adata.gzip.h5seurat")
+seuratObject_Mat = seuratObject[['RNA']]@counts
+
+##### This is the MCL script !!!! ######
+
+library(Seurat)
+MCA1.1_seurat <- CreateSeuratObject(seuratObject_Mat)
+MCA1.1_seurat$cell_id = colnames(MCA1.1_seurat)
+
+######
+
+setwd("/zp1/data/plyu3/Altas_add_CellAnn/MCA1.1")
+data <- readxl::read_excel("MCA1.1_cell_info.xlsx")
+
+m = match(MCA1.1_seurat$cell_id,data$cellnames)
+
+MCA1.1_seurat$tissue = data$tissue[m]
+MCA1.1_seurat$stage = data$stage[m]
+MCA1.1_seurat$celltype = data$celltype[m]
+MCA1.1_seurat$cluster = data$cluster[m]
+
+MCA1.1_seurat$class = paste(MCA1.1_seurat$stage,MCA1.1_seurat$tissue,sep="_")
+
+#######
+#######
+#######
+
+table(MCA1.1_seurat$celltype)
+table(MCA1.1_seurat$tissue)
+
+saveRDS(MCA1.1_seurat,file='MCA1.1_seurat_Aug23')
+
+####### Next merge the tissue and celltype and reduce number of cells #########
+#######
+
+setwd("/zp1/data/plyu3/Altas_add_CellAnn/MCA1.1")
+MCA1.1_seurat <- readRDS("MCA1.1_seurat_Aug23")
+
+
+#######
+#######
+
+library(Seurat)
+
+head(MCA1.1_seurat@meta.data)
+
+MCA1.1_seurat$index = paste(MCA1.1_seurat$tissue,MCA1.1_seurat$celltype,sep='~~')
+
+table(MCA1.1_seurat$index)
+
+####### cutoff we will set !! ######
+#######
+
+altas_seurat = MCA1.1_seurat
+
+check_process_Step_altas2 <- function(altas_seurat){
+	######
+	###### the index tag for altas_seurat ######
+	######
+	table_ct = data.frame(table(altas_seurat$index))
+	######
+	table_ct = table_ct[which(table_ct$Freq > 50),]
+	######
+	tmp_cells_all = c()
+	######
+	tmp_mat = altas_seurat[['RNA']]@counts
+	######
+	tmp_seurat = CreateSeuratObject(tmp_mat)
+	tmp_seurat$index = altas_seurat$index
+	tmp_seurat$cell_id = colnames(tmp_seurat)
+	for(j in 1:length(table_ct$Var1)){
+			tmp_ct_name = as.character(table_ct$Var1[j])
+			tmp_ct_num = table_ct$Freq[j]
+			######
+			tmp_ct_seurat = tmp_seurat[,which(tmp_seurat$index == tmp_ct_name)]
+			######
+			if(tmp_ct_num > 500){
+				#### half half ####
+				delta = round(tmp_ct_num - 500)/2
+				tmp_ct_seurat_cell_tab = tmp_ct_seurat@meta.data[,c('nCount_RNA','cell_id')]
+				tmp_ct_seurat_cell_tab = tmp_ct_seurat_cell_tab[order(tmp_ct_seurat_cell_tab$nCount_RNA),]
+				####
+				cell_index = tmp_ct_seurat_cell_tab$cell_id[c(delta+1):c(length(tmp_ct_seurat_cell_tab$cell_id)-delta)]
+				####
+				tmp_ct_seurat_sub = tmp_ct_seurat[,which(tmp_ct_seurat$cell_id %in% cell_index == T)]
+				tmp_cells_all = c(tmp_cells_all,tmp_ct_seurat_sub$cell_id)
+			}
+			if(tmp_ct_num < 501){
+				tmp_ct_seurat_sub = tmp_ct_seurat
+				tmp_cells_all = c(tmp_cells_all,tmp_ct_seurat_sub$cell_id)
+			}
+			table_ct$Freq_new[j] = dim(tmp_ct_seurat_sub)[2]
+	}
+	######
+	tmp_seurat_new = altas_seurat[,which(altas_seurat$cell_id %in% tmp_cells_all == T)]
+	###### new seurat ###
+	return(tmp_seurat_new)
+}
+
+MCA1.1_seurat_cl = check_process_Step_altas2(MCA1.1_seurat)
+
+####
+#### Next we will see how many cells it has !!! #####
+####
+
+#### 
+####
+setwd("/zp1/data/plyu3/CellAnn_final_check")
+
+saveRDS(MCA1.1_seurat_cl,file='MCA1.1_seurat_cl_Aug23')
+
+
+
+
+
+setwd("/zp1/data/plyu3/CellAnn_final_check")
+
+library(readxl)
+
+data <- data.frame(read_xlsx("check_list3_update1.xlsx"))
+
+data_list <- data
+i_index = which(data_list$Background == 'MCA')
+file_list  = data_list
+
+Step1_merge_sample_cl_with_back <- function(file_list,i_index){
+	######## return will be update the file_list file ##########
+	######## loop each samples ########
+	for(i in i_index){
+		print(i)
+		##### "Folder" #####
+		folder = file_list$Folder[i]
+		##### setwd ########
+		setwd(folder)
+		##### TAG ##########
+		TAG = file_list$Background[i]
+		#####
+		tag = Merge_datasets(folder,TAG)
+		#####
+		file_list$TAG[i] = tag
+	}
+	###########
+	return(file_list)
+}
+
+Merge_datasets <- function(folder,TAG){
+	##########
+	setwd(folder)
+	##########
+	files = list.files()
+	##########
+	ref_seurat = files[grep("_new_clean$",files)]
+	ref_seurat_obj = readRDS(ref_seurat)
+	##########
+	tag = gsub("_seurat_obj_new_clean","",ref_seurat)
+	##########
+	k_tmp1 = which(colnames(ref_seurat_obj@meta.data) %in% c('Tissue_detail') == T)
+	if(length(k_tmp1) > 0){
+		ref_seurat_obj$tissue = ref_seurat_obj$Tissue_detail
+	}
+	k_tmp2 = which(colnames(ref_seurat_obj@meta.data) %in% c('stage_tissue') == T)
+	if(length(k_tmp2) > 0){
+		ref_seurat_obj$tissue = ref_seurat_obj$stage_tissue
+	}
+	##########
+	if(TAG == 'M_Tabula_Muris'){
+		back_seurat = readRDS("/zp1/data/plyu3/CellAnn_final_check/Test_datasets/droplet_seurat_merge_cl")
+		#######
+		#######
+		tag2 = paste0(tag,"__",TAG)
+		batch_list = c("batch_sub","batch_background")
+		setwd(folder)
+		Output_py_matrix_test(x=ref_seurat_obj,y=back_seurat,batch_list,tag=tag2)
+	}
+	if(TAG == 'MCA'){
+		back_seurat = readRDS("/zp1/data/plyu3/CellAnn_final_check/MCA1.1_seurat_cl_Aug23")
+		#######
+		#######
+		tag2 = paste0(tag,"__",TAG)
+		batch_list = c("batch_sub","batch_background")
+		setwd(folder)
+		Output_py_matrix_test(x=ref_seurat_obj,y=back_seurat,batch_list,tag=tag2)
+	}
+	######
+	return(tag)
+}
+
+i_index = 397:437
+Step1_merge_sample_cl_with_back(data_list,i_index)
+
+###########
+##########
+########
+######
+ssh plyu3@omb2.onc.jhmi.edu
+U[9C20&&
+
+conda activate scvi-env
+
+cd /zp1/data/plyu3/CellAnn_final_check
+
+nohup python cellann_final_back_batch2.py &
+
+###############
+######## update the HCL datasets !!!! ############
+###############
+
+
+
+###############
+############### OK!!! we will see the HCL datasets !!!! ######
+###############
+conda activate seurat4
+R
+library(Seurat)
+setwd('/zp1/data/plyu3/Altas_add_CellAnn/MCA1.1/')
+
+load("new_Seurat_list")
+
+###############
+
+head(rownames(new_Seurat_list[[1]])
+
+#### It's the HCL genes #########
+#### then we add the information to the dat.txt #####
+#### OK!!! let us do it !!! #####
+#### add dataset tag to the dat.txt #####
+
+HCL_dat <- read.table("HCL_dat.txt",head=T)
+
+####
+####
+
+head(new_Seurat_list[[1]]@meta.data)
+
+
+"Sample" and the "Celltype"
+
+#####
+#####
+
+HCL_merge <- merge(new_Seurat_list[[1]], y = new_Seurat_list[2:99])
+
+##### then we will see what's in the seurat list !!! ######
+#####
+
+table(HCL_merge$Celltype)
+table(HCL_merge$Sample)
+
+##### 
+
+HCL_merge$celltype = HCL_merge$Celltype
+HCL_merge$tissue = HCL_merge$Sample
+HCL_merge$cell_id = colnames(HCL_merge)
+
+HCL_merge$index = HCL_merge$celltype
+HCL_merge_cl = check_process_Step_altas3(HCL_merge)
+
+
+
+check_process_Step_altas3 <- function(altas_seurat){
+	######
+	###### the index tag for altas_seurat ######
+	######
+	table_ct = data.frame(table(altas_seurat$index))
+	######
+	table_ct = table_ct[which(table_ct$Freq > 50),]
+	######
+	tmp_cells_all = c()
+	######
+	tmp_mat = altas_seurat[['RNA']]@counts
+	######
+	tmp_seurat = CreateSeuratObject(tmp_mat)
+	tmp_seurat$index = altas_seurat$index
+	tmp_seurat$cell_id = colnames(tmp_seurat)
+	print(length(table_ct$Var1))
+	for(j in 1:length(table_ct$Var1)){
+			print(j)
+			tmp_ct_name = as.character(table_ct$Var1[j])
+			tmp_ct_num = table_ct$Freq[j]
+			######
+			tmp_ct_seurat = tmp_seurat[,which(tmp_seurat$index == tmp_ct_name)]
+			######
+			if(tmp_ct_num > 250){
+				#### half half ####
+				delta = round(tmp_ct_num - 250)/2
+				tmp_ct_seurat_cell_tab = tmp_ct_seurat@meta.data[,c('nCount_RNA','cell_id')]
+				tmp_ct_seurat_cell_tab = tmp_ct_seurat_cell_tab[order(tmp_ct_seurat_cell_tab$nCount_RNA),]
+				####
+				cell_index = tmp_ct_seurat_cell_tab$cell_id[c(delta+1):c(length(tmp_ct_seurat_cell_tab$cell_id)-delta)]
+				####
+				tmp_ct_seurat_sub = tmp_ct_seurat[,which(tmp_ct_seurat$cell_id %in% cell_index == T)]
+				tmp_cells_all = c(tmp_cells_all,tmp_ct_seurat_sub$cell_id)
+			}
+			if(tmp_ct_num < 251){
+				tmp_ct_seurat_sub = tmp_ct_seurat
+				tmp_cells_all = c(tmp_cells_all,tmp_ct_seurat_sub$cell_id)
+			}
+			table_ct$Freq_new[j] = dim(tmp_ct_seurat_sub)[2]
+	}
+	######
+	tmp_seurat_new = altas_seurat[,which(altas_seurat$cell_id %in% tmp_cells_all == T)]
+	###### new seurat ###
+	return(tmp_seurat_new)
+}
+
+setwd("/zp1/data/plyu3/CellAnn_final_check")
+
+saveRDS(HCL_merge_cl,file='HCL_merge_cl_Aug23')
+
+########
+######## Next we will get merge the matrix !!!! ########
+########
+
+
+setwd("/zp1/data/plyu3/CellAnn_final_check")
+
+library(readxl)
+
+data <- data.frame(read_xlsx("check_list3_update2.xlsx"))
+
+data_list <- data
+i_index = which(data_list$Background == 'HCL')
+file_list  = data_list
+
+Step1_merge_sample_cl_with_back <- function(file_list,i_index){
+	######## return will be update the file_list file ##########
+	######## loop each samples ########
+	for(i in i_index){
+		print(i)
+		##### "Folder" #####
+		folder = file_list$Folder[i]
+		##### setwd ########
+		setwd(folder)
+		##### TAG ##########
+		TAG = file_list$Background[i]
+		#####
+		tag = Merge_datasets(folder,TAG)
+		#####
+		file_list$TAG[i] = tag
+	}
+	###########
+	return(file_list)
+}
+
+Merge_datasets <- function(folder,TAG){
+	##########
+	setwd(folder)
+	##########
+	files = list.files()
+	##########
+	ref_seurat = files[grep("_new_clean$",files)]
+	ref_seurat_obj = readRDS(ref_seurat)
+	##########
+	tag = gsub("_seurat_obj_new_clean","",ref_seurat)
+	##########
+	k_tmp1 = which(colnames(ref_seurat_obj@meta.data) %in% c('Tissue_detail') == T)
+	if(length(k_tmp1) > 0){
+		ref_seurat_obj$tissue = ref_seurat_obj$Tissue_detail
+	}
+	k_tmp2 = which(colnames(ref_seurat_obj@meta.data) %in% c('stage_tissue') == T)
+	if(length(k_tmp2) > 0){
+		ref_seurat_obj$tissue = ref_seurat_obj$stage_tissue
+	}
+	k_tmp3 = which(colnames(ref_seurat_obj@meta.data) %in% c('Celltype') == T)
+	if(length(k_tmp2) > 0){
+		ref_seurat_obj$celltype = ref_seurat_obj$Celltype
+	}
+	k_tmp4 = which(colnames(ref_seurat_obj@meta.data) %in% c('Sample') == T)
+	if(length(k_tmp2) > 0){
+		ref_seurat_obj$tissue = ref_seurat_obj$Sample
+	}
+	##########
+	if(TAG == 'M_Tabula_Muris'){
+		back_seurat = readRDS("/zp1/data/plyu3/CellAnn_final_check/Test_datasets/droplet_seurat_merge_cl")
+		#######
+		#######
+		tag2 = paste0(tag,"__",TAG)
+		batch_list = c("batch_sub","batch_background")
+		setwd(folder)
+		Output_py_matrix_test(x=ref_seurat_obj,y=back_seurat,batch_list,tag=tag2)
+	}
+	if(TAG == 'MCA'){
+		back_seurat = readRDS("/zp1/data/plyu3/CellAnn_final_check/MCA1.1_seurat_cl_Aug23")
+		#######
+		#######
+		tag2 = paste0(tag,"__",TAG)
+		batch_list = c("batch_sub","batch_background")
+		setwd(folder)
+		Output_py_matrix_test(x=ref_seurat_obj,y=back_seurat,batch_list,tag=tag2)
+	}
+	if(TAG == 'HCL'){
+		back_seurat = readRDS("/zp1/data/plyu3/CellAnn_final_check/HCL_merge_cl_Aug23")
+		#######
+		#######
+		tag2 = paste0(tag,"__",TAG)
+		batch_list = c("batch_sub","batch_background")
+		setwd(folder)
+		Output_py_matrix_test(x=ref_seurat_obj,y=back_seurat,batch_list,tag=tag2)
+	}
+	######
+	return(tag)
+}
+
+i_index = 397:437
+Step1_merge_sample_cl_with_back(data_list,i_index)
+
+
+
+
+
 
 
 
