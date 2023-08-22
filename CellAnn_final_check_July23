@@ -1642,12 +1642,17 @@ Merge_datasets <- function(folder,TAG){
 		ref_seurat_obj$tissue = ref_seurat_obj$stage_tissue
 	}
 	k_tmp3 = which(colnames(ref_seurat_obj@meta.data) %in% c('Celltype') == T)
-	if(length(k_tmp2) > 0){
+	if(length(k_tmp3) > 0){
 		ref_seurat_obj$celltype = ref_seurat_obj$Celltype
 	}
 	k_tmp4 = which(colnames(ref_seurat_obj@meta.data) %in% c('Sample') == T)
-	if(length(k_tmp2) > 0){
+	if(length(k_tmp4) > 0){
 		ref_seurat_obj$tissue = ref_seurat_obj$Sample
+	}
+	##########
+	k_tmp5 = which(colnames(ref_seurat_obj@meta.data) %in% c('tissue') == T)
+	if(length(k_tmp5) == 0){
+		ref_seurat_obj$tissue = "tissue"
 	}
 	##########
 	if(TAG == 'M_Tabula_Muris'){
@@ -1659,7 +1664,7 @@ Merge_datasets <- function(folder,TAG){
 		setwd(folder)
 		Output_py_matrix_test(x=ref_seurat_obj,y=back_seurat,batch_list,tag=tag2)
 	}
-	if(TAG == 'MCA'){
+	if(TAG == 'MCA' | TAG == 'MCA1'){
 		back_seurat = readRDS("/zp1/data/plyu3/CellAnn_final_check/MCA1.1_seurat_cl_Aug23")
 		#######
 		#######
@@ -1668,7 +1673,7 @@ Merge_datasets <- function(folder,TAG){
 		setwd(folder)
 		Output_py_matrix_test(x=ref_seurat_obj,y=back_seurat,batch_list,tag=tag2)
 	}
-	if(TAG == 'HCL'){
+	if(TAG == 'HCL' | TAG == 'HCL1' | TAG == 'HCL2'){
 		back_seurat = readRDS("/zp1/data/plyu3/CellAnn_final_check/HCL_merge_cl_Aug23")
 		#######
 		#######
@@ -1681,8 +1686,287 @@ Merge_datasets <- function(folder,TAG){
 	return(tag)
 }
 
-i_index = 397:437
 Step1_merge_sample_cl_with_back(data_list,i_index)
+
+######
+
+ssh plyu3@omb2.onc.jhmi.edu
+U[9C20&&
+
+conda activate scvi-env
+
+cd /zp1/data/plyu3/CellAnn_final_check
+
+nohup python cellann_final_back_batch3.py &
+
+
+
+######
+###### let us prepare the HCL1 datasets ########
+######
+ssh plyu3@omb2.onc.jhmi.edu
+U[9C20&&
+
+conda activate seurat4
+
+R
+
+setwd("/zp1/data/plyu3/CellAnn_final_check")
+
+library(readxl)
+data <- data.frame(read_xlsx("check_list3_update4.xlsx"))
+
+data_list <- data
+i_index = which(data_list$Background == 'HCL1')
+file_list  = data_list
+
+
+
+Output_py_matrix_test <- function(x,y,batch_list,tag){
+	#########
+	mat_x = x[['RNA']]@counts
+	mat_y = y[['RNA']]@counts
+	#########
+	overlap_G = rownames(mat_x)[which(rownames(mat_x) %in% rownames(mat_y) == T)]
+	#########
+	mat_x_cl = mat_x[which(rownames(mat_x) %in% overlap_G == T),]
+	mat_y_cl = mat_y[which(rownames(mat_y) %in% overlap_G == T),]
+	########
+	match_x = match(overlap_G,rownames(mat_x_cl))
+	match_y = match(overlap_G,rownames(mat_y_cl))
+	#########
+	mat_x_cl_s = mat_x_cl[match_x,]
+	mat_y_cl_s = mat_y_cl[match_y,]
+	##########
+	all.equal(rownames(mat_x_cl_s),rownames(mat_y_cl_s))
+	########## Next we will add cell meta #####
+	cell_meta_x = x@meta.data[,c('tissue','celltype')]
+	cell_meta_x$cell_id = rownames(cell_meta_x)
+	##########
+	cell_meta_y = y@meta.data[,c('tissue','celltype')]
+	cell_meta_y$cell_id = rownames(cell_meta_y)
+	##########
+	cell_meta_x$batch = batch_list[1]
+	cell_meta_y$batch = batch_list[2]
+	##########
+	cell_meta_x$celltype = paste0('sample_',cell_meta_x$celltype)
+	cell_meta_y$celltype = paste0('back_',cell_meta_y$celltype)
+	##########
+	mat_combined = cbind(mat_x_cl_s,mat_y_cl_s)
+	cell_meta_combined = rbind(cell_meta_x,cell_meta_y)
+	##########
+	all.equal(colnames(mat_combined),cell_meta_combined$cell_id)
+	##########
+	mat_file_name = paste0(tag,"expression_matrix.mtx")
+	cell_file_name = paste0(tag,"cell_metadata.csv")
+	gene_file_name = paste0(tag,"gene_metadata.csv")
+	#########
+	print(paste0("dims:",dim(Matrix::t(mat_combined))))
+	#########
+	library(Seurat)
+	library(Matrix)
+	writeMM(Matrix::t(mat_combined), file = mat_file_name, row.names = TRUE)
+	write.csv(cell_meta_combined, file = cell_file_name, row.names = TRUE)
+	write.csv(rownames(mat_combined), file = gene_file_name, row.names = TRUE)
+	#########
+}
+
+###
+
+
+data_list_HCL1 <- Step1_merge_sample_cl_with_back(data_list,i_index)
+
+###
+ssh plyu3@omb2.onc.jhmi.edu
+U[9C20&&
+
+conda activate seurat4
+
+R
+
+setwd("/zp1/data/plyu3/CellAnn_final_check")
+
+library(readxl)
+data <- data.frame(read_xlsx("check_list3_update4.xlsx"))
+
+data_list <- data
+i_index = which(data_list$Background == 'HCL2')
+file_list  = data_list
+
+
+data_list_HCL2 <- Step1_merge_sample_cl_with_back(data_list,i_index)
+
+
+###
+ssh plyu3@omb2.onc.jhmi.edu
+U[9C20&&
+
+conda activate seurat4
+
+R
+
+setwd("/zp1/data/plyu3/CellAnn_final_check")
+
+library(readxl)
+data <- data.frame(read_xlsx("check_list3_update4.xlsx"))
+
+data_list <- data
+i_index = which(data_list$Background == 'MCA1')
+file_list  = data_list
+
+
+data_list_MCA1 <- Step1_merge_sample_cl_with_back(data_list,i_index)
+
+
+###
+### Next copy all the files to a single folder !!! #####
+###
+
+###
+###
+###
+
+
+
+[1] 170
+[1] "dims:94366" "dims:298" 
+
+Need revise !!!
+
+[1] 174
+[1] "dims:97366" "dims:1972" 
+
+Need revise !!!
+
+[1] 185
+[1] "dims:123370" "dims:89"   
+
+Need revise !!! 这个是 Mouse !!!
+
+###
+### we will check these 3 samples !!!! ###
+###
+
+
+### 下一部 copy #####
+### create a folder and copy ####
+###
+
+###
+###
+###
+
+cd /zp1/data/plyu3/CellAnn_final_check
+
+###
+###
+###
+
+### cp HCL1 and HCL2 to the old server ###
+###
+
+
+exclude_index = c(170,174,185)
+
+###
+###
+
+conda activate seurat4
+R
+
+setwd("/zp1/data/plyu3/CellAnn_final_check")
+
+library(readxl)
+data <- data.frame(read_xlsx("check_list3_update4.xlsx"))
+
+data_list <- data
+i_index = which(data_list$Background %in% c('HCL1','HCL2') == T)
+file_list  = data_list
+
+###
+i_index = i_index[which(i_index %in% exclude_index == F)]
+###
+###
+###
+i = i_index[1]
+
+copy_sample_cl <- function(file_list,i_index){
+	######## return will be update the file_list file ##########
+	######## loop each samples ########
+	for(i in i_index){
+		print(i)
+		##### "Folder" #####
+		folder = file_list$Folder[i]
+		##### setwd ########
+		setwd(folder)
+		##### TAG ##########
+		TAG = file_list$Background[i]
+		#####
+		setwd(folder)
+		##########
+		files = list.files()
+		##########
+		ref_seurat = files[grep("_new_clean$",files)]
+		##########
+		tag = gsub("_seurat_obj_new_clean","",ref_seurat)
+		#####
+		new_folder = paste0("/zp1/data/plyu3/CellAnn_final_check/HCL12_copy/","NO",i,'__',tag)
+		#####
+		command = paste("mkdir",new_folder)
+		print(command)
+		system(command,wait=T)
+		#####
+		mat_file_name = paste0(tag,'__',TAG,"expression_matrix.mtx")
+		cell_file_name = paste0(tag,'__',TAG,"cell_metadata.csv")
+		gene_file_name = paste0(tag,'__',TAG,"gene_metadata.csv")
+		#####
+		command1 = paste("cp",mat_file_name,new_folder)
+		command2 = paste("cp",cell_file_name,new_folder)
+		command3 = paste("cp",gene_file_name,new_folder)
+		######
+		system(command1,wait=F)
+		system(command2,wait=F)
+		system(command3,wait=F)
+		print(i)
+	}
+	###########
+	print("Done!")
+}
+
+file_list2 <- copy_sample_cl(file_list,i_index)
+
+#####
+##### then we will copy the folder to the old server !!! #####
+#####
+
+scp -r HCL12_copy plyu3@10.112.40.197:/zp1/data/plyu3
+
+
+#####
+
+ssh plyu3@10.112.40.197
+njd$rft1
+
+#####
+
+#####
+conda env list
+conda activate scvi-env
+
+#####
+#####
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 

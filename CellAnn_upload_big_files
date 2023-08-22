@@ -1,8 +1,17 @@
+####
+#### how to remove the last zip file on the github ？ ######
+####
 #### CellAnn
 #### uploading code 
-
+####
 #### for big files
 ####
+
+####
+####
+cd /Users/pin/Desktop/13LGS_plotly_figures/git-lfs-3.3.0\ 2
+
+cd  /Users/pin/Documents/GitHub/CellAnn_shinyapp/
 
 git lfs track *zip*
 
@@ -14,12 +23,26 @@ git commit -m "Add large file"
 
 git push origin main
 
+####
+####
+####
 
 cd 
 
+####
+####
+
 git clone https://github.com/username/repository.git
 
+####
+####
+
 
 ########
 ########
+########
+########
+
+
+
 
