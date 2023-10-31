@@ -9,15 +9,16 @@
 
 ####
 ####
+
 cd /Users/pin/Desktop/13LGS_plotly_figures/git-lfs-3.3.0\ 2
 
 cd  /Users/pin/Documents/GitHub/CellAnn_shinyapp/
 
-git lfs track *zip*
+git lfs track *z*
 
-git add *zip*
+git add *z*
 
-git commit -m "Add large file"
+git commit -m "Fix bugs"
 
 #### push the image ####
 

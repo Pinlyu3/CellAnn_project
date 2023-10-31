@@ -1705,6 +1705,7 @@ nohup python cellann_final_back_batch3.py &
 ###### let us prepare the HCL1 datasets ########
 ######
 ssh plyu3@omb2.onc.jhmi.edu
+
 U[9C20&&
 
 conda activate seurat4
@@ -1797,8 +1798,13 @@ file_list  = data_list
 data_list_HCL2 <- Step1_merge_sample_cl_with_back(data_list,i_index)
 
 
-###
-ssh plyu3@omb2.onc.jhmi.edu
+####
+####
+####
+
+
+
+ssh plyu3@10.181.57.115
 U[9C20&&
 
 conda activate seurat4
@@ -1877,6 +1883,7 @@ R
 setwd("/zp1/data/plyu3/CellAnn_final_check")
 
 library(readxl)
+
 data <- data.frame(read_xlsx("check_list3_update4.xlsx"))
 
 data_list <- data
@@ -1939,12 +1946,12 @@ file_list2 <- copy_sample_cl(file_list,i_index)
 ##### then we will copy the folder to the old server !!! #####
 #####
 
-scp -r HCL12_copy plyu3@10.112.40.197:/zp1/data/plyu3
+scp -r HCL12_copy plyu3@10.181.57.113:/zp1/data/plyu3
 
 
 #####
 
-ssh plyu3@10.112.40.197
+ssh plyu3@10.181.57.113
 njd$rft1
 
 #####
@@ -1954,9 +1961,1295 @@ conda env list
 conda activate scvi-env
 
 #####
+##### on the old server #####
+#####
+#####
+
+copy out the finished samples ！！！！
+
+#####
+#####
+#####
+#####
+
+conda activate Signac2
+
+R
+
 #####
 
 
+
+ssh plyu3@10.181.57.113
+njd$rft1
+
+
+setwd("/zp1/data/plyu3/HCL12_copy")
+
+files = list.files()
+
+for(i in 1:length(files)){
+	########
+	files_sub = paste0("/zp1/data/plyu3/HCL12_copy/",files[i])
+	########
+	files_sub_files = list.files(files_sub)
+	########
+	if(length(files_sub_files) > 7){
+		command = paste("mv", files_sub, "/zp1/data/plyu3/HCL12_copy_success/")
+		print(command)
+		system(command,wait=F)
+	}
+
+}
+
+
+list.files("/zp1/data/plyu3/HCL12_copy/NO292__22-year-old_human_stage")
+
+
+
+ssh plyu3@10.181.57.113
+njd$rft1
+
+conda activate scvi-env
+
+cd /zp1/data/plyu3/HCL12_code
+
+nohup python cellann_final_back_batch3_oldserver.py &
+
+
+############
+############
+
+HCL1
+HCL2
+
+M_Tabula_Muris
+MCA
+
+
+MCA1 not work !!!!
+#####
+#####
+
+we will copy out MCA1 samples to output folders !!!! ########
+#####
+
+ssh plyu3@10.181.57.113
+njd$rft1
+
+#####
+
+ssh plyu3@10.181.57.115
+U[9C20&&
+
+
+conda activate seurat4
+R
+
+setwd("/zp1/data/plyu3/CellAnn_final_check")
+
+library(readxl)
+
+data <- data.frame(read_xlsx("check_list3_update5.xlsx"))
+
+data_list <- data
+i_index = which(data_list$Background %in% c('MCA1') == T)
+file_list  = data_list
+
+exclude_index = c(170,174,185)
+
+###
+i_index = i_index[which(i_index %in% exclude_index == F)]
+###
+###
+###
+i = i_index[1]
+
+copy_sample_cl <- function(file_list,i_index){
+	######## return will be update the file_list file ##########
+	######## loop each samples ########
+	for(i in i_index){
+		print(i)
+		##### "Folder" #####
+		folder = file_list$Folder[i]
+		##### setwd ########
+		setwd(folder)
+		##### TAG ##########
+		TAG = file_list$Background[i]
+		#####
+		setwd(folder)
+		##########
+		files = list.files()
+		##########
+		ref_seurat = files[grep("_new_clean$",files)]
+		##########
+		tag = gsub("_seurat_obj_new_clean","",ref_seurat)
+		#####
+		new_folder = paste0("/zp1/data/plyu3/CellAnn_final_check/MCA1_copy/","NO",i,'__',tag)
+		#####
+		command = paste("mkdir",new_folder)
+		print(command)
+		system(command,wait=T)
+		#####
+		mat_file_name = paste0(tag,'__',TAG,"expression_matrix.mtx")
+		cell_file_name = paste0(tag,'__',TAG,"cell_metadata.csv")
+		gene_file_name = paste0(tag,'__',TAG,"gene_metadata.csv")
+		#####
+		command1 = paste("cp",mat_file_name,new_folder)
+		command2 = paste("cp",cell_file_name,new_folder)
+		command3 = paste("cp",gene_file_name,new_folder)
+		######
+		system(command1,wait=F)
+		system(command2,wait=F)
+		system(command3,wait=F)
+		print(i)
+	}
+	###########
+	print("Done!")
+}
+
+file_list2 <- copy_sample_cl(file_list,i_index)
+
+#####
+##### next run command !!! ######
+#####
+
+mkdir /zp1/data/plyu3/CellAnn_final_check/MCA1_code/
+
+#####
+conda env list
+
+conda activate scvi-env
+
+#####
+
+cd /zp1/data/plyu3/CellAnn_final_check/MCA1_code
+
+nohup python cellann_final_back_batch4_newserver.py &
+
+#####
+##### OK!!! 搞定 ！！！ #####
+#####
+
+
+ssh plyu3@10.181.57.115
+U[9C20&&
+
+mkdir /zp1/data/plyu3/CellAnn_final_check/MCA1_copy_success/
+#####
+conda activate seurat4
+
+setwd("/zp1/data/plyu3/CellAnn_final_check/MCA1_copy/")
+
+files = list.files()
+
+for(i in 1:length(files)){
+	########
+	files_sub = paste0("/zp1/data/plyu3/CellAnn_final_check/MCA1_copy/",files[i])
+	########
+	files_sub_files = list.files(files_sub)
+	########
+	if(length(files_sub_files) > 7){
+		command = paste("mv", files_sub, "/zp1/data/plyu3/CellAnn_final_check/MCA1_copy_success/")
+		print(command)
+		system(command,wait=F)
+	}
+
+}
+
+
+list.files("/zp1/data/plyu3/HCL12_copy/NO292__22-year-old_human_stage")
+
+
+######
+######
+
+
+ssh plyu3@10.181.57.115
+U[9C20&&
+
+conda activate seurat4
+R
+
+setwd("/zp1/data/plyu3/CellAnn_final_check")
+
+library(readxl)
+
+data <- data.frame(read_xlsx("check_list3_update5.xlsx"))
+
+exclude_index = c(170,174,185)
+
+data[exclude_index,]
+
+######
+170 ##
+######
+
+index = 170 
+
+folder = data$Folder[index]
+files = list.files(folder)
+setwd(folder)
+matrix = Matrix::readMM("pmid32728211__MCA1expression_matrix.mtx")
+cells = read.table("pmid32728211__MCA1gene_metadata.csv")
+
+
+ref_seurat = files[grep("_seurat_obj$",files)]
+
+library(Seurat)
+ref_seurat_obj = readRDS(ref_seurat)
+
+
+matrix = read.table("exprMatrix (38).tsv",sep='\t')
+
+only300genes OK!!!! #############
+
+###### Next sample !!!! #########
+
+index = 174
+
+folder = data$Folder[index]
+files = list.files(folder)
+
+
+setwd(folder)
+
+ref_seurat = files[grep("_seurat_obj$",files)]
+library(Seurat)
+ref_seurat_obj = readRDS(ref_seurat)
+
+only 2000 genes !!!! 
+
+setwd(folder)
+matrix = Matrix::readMM("pmid33448928__MCA1expression_matrix.mtx")
+cells = read.table("pmid33448928__MCA1gene_metadata.csv")
+
+only1972genes OK!!!! #############
+
+
+
+##### Next sample !!!!! #########
+
+index = 185
+
+folder = data$Folder[index]
+files = list.files(folder)
+setwd(folder)
+
+matrix = Matrix::readMM("pmid32413319__HCL2expression_matrix.mtx")
+
+setwd(folder)
+
+ref_seurat = files[grep("_seurat_obj$",files)]
+
+library(Seurat)
+ref_seurat_obj = readRDS(ref_seurat)
+
+#### this sample should integrate with MCA ###
+
+data[185,]
+
+#### we will change this information !!! #####
+#### to MCA1 ####
+
+
+
+setwd("/zp1/data/plyu3/CellAnn_final_check")
+
+library(readxl)
+
+data <- data.frame(read_xlsx("check_list3_update5.xlsx"))
+
+data_list <- data
+i_index = 185
+file_list  = data_list
+
+Step1_merge_sample_cl_with_back <- function(file_list,i_index){
+	######## return will be update the file_list file ##########
+	######## loop each samples ########
+	for(i in i_index){
+		print(i)
+		##### "Folder" #####
+		folder = file_list$Folder[i]
+		##### setwd ########
+		setwd(folder)
+		##### TAG ##########
+		TAG = file_list$Background[i]
+		#####
+		tag = Merge_datasets(folder,TAG)
+		#####
+		file_list$TAG[i] = tag
+	}
+	###########
+	return(file_list)
+}
+
+Merge_datasets <- function(folder,TAG){
+	##########
+	setwd(folder)
+	##########
+	files = list.files()
+	##########
+	ref_seurat = files[grep("_new_clean$",files)]
+	ref_seurat_obj = readRDS(ref_seurat)
+	##########
+	tag = gsub("_seurat_obj_new_clean","",ref_seurat)
+	##########
+	k_tmp1 = which(colnames(ref_seurat_obj@meta.data) %in% c('Tissue_detail') == T)
+	if(length(k_tmp1) > 0){
+		ref_seurat_obj$tissue = ref_seurat_obj$Tissue_detail
+	}
+	k_tmp2 = which(colnames(ref_seurat_obj@meta.data) %in% c('stage_tissue') == T)
+	if(length(k_tmp2) > 0){
+		ref_seurat_obj$tissue = ref_seurat_obj$stage_tissue
+	}
+	k_tmp3 = which(colnames(ref_seurat_obj@meta.data) %in% c('Celltype') == T)
+	if(length(k_tmp3) > 0){
+		ref_seurat_obj$celltype = ref_seurat_obj$Celltype
+	}
+	k_tmp4 = which(colnames(ref_seurat_obj@meta.data) %in% c('Sample') == T)
+	if(length(k_tmp4) > 0){
+		ref_seurat_obj$tissue = ref_seurat_obj$Sample
+	}
+	##########
+	k_tmp5 = which(colnames(ref_seurat_obj@meta.data) %in% c('tissue') == T)
+	if(length(k_tmp5) == 0){
+		ref_seurat_obj$tissue = "tissue"
+	}
+	##########
+	if(TAG == 'M_Tabula_Muris'){
+		back_seurat = readRDS("/zp1/data/plyu3/CellAnn_final_check/Test_datasets/droplet_seurat_merge_cl")
+		#######
+		#######
+		tag2 = paste0(tag,"__",TAG)
+		batch_list = c("batch_sub","batch_background")
+		setwd(folder)
+		Output_py_matrix_test(x=ref_seurat_obj,y=back_seurat,batch_list,tag=tag2)
+	}
+	if(TAG == 'MCA' | TAG == 'MCA1'){
+		back_seurat = readRDS("/zp1/data/plyu3/CellAnn_final_check/MCA1.1_seurat_cl_Aug23")
+		#######
+		#######
+		tag2 = paste0(tag,"__",TAG)
+		batch_list = c("batch_sub","batch_background")
+		setwd(folder)
+		Output_py_matrix_test(x=ref_seurat_obj,y=back_seurat,batch_list,tag=tag2)
+	}
+	if(TAG == 'HCL' | TAG == 'HCL1' | TAG == 'HCL2'){
+		back_seurat = readRDS("/zp1/data/plyu3/CellAnn_final_check/HCL_merge_cl_Aug23")
+		#######
+		#######
+		tag2 = paste0(tag,"__",TAG)
+		batch_list = c("batch_sub","batch_background")
+		setwd(folder)
+		Output_py_matrix_test(x=ref_seurat_obj,y=back_seurat,batch_list,tag=tag2)
+	}
+	######
+	return(tag)
+}
+
+Step1_merge_sample_cl_with_back(data_list,i_index)
+
+
+cp -r /zp1/data/plyu3/SCP_old/pmid32413319/  /zp1/data/plyu3/CellAnn_final_check/MCA1_copy/
+
+
+
+#### #### ####
+#### #### ####
+#### #### ####
+
+ssh plyu3@10.181.57.115
+U[9C20&&
+
+conda activate seurat4
+R
+
+
+setwd("/zp1/data/plyu3/CellAnn_final_check")
+library(readxl)
+data <- data.frame(read_xlsx("check_list3_update5.xlsx"))
+
+exclude_index = c(170,174,185)
+
+data[170,]
+data[174,]
+
+mkdir /zp1/data/plyu3/CellAnn_final_check/MCA1_copy_short
+
+cp -r /zp1/data/plyu3/UCSC_old/pmid32728211/  /zp1/data/plyu3/CellAnn_final_check/MCA1_copy_short/
+cp -r /zp1/data/plyu3/UCSC_old/pmid33448928/  /zp1/data/plyu3/CellAnn_final_check/MCA1_copy_short/
+
+
+#### #### ####
+#### #### ####
+#### #### ####
+
+python cellann_final_back_batch5_short_newserver.py
+
+mv /zp1/data/plyu3/CellAnn_final_check/MCA1_copy_short/pmid32728211 /zp1/data/plyu3/CellAnn_final_check/MCA1_copy_success/
+
+mv /zp1/data/plyu3/CellAnn_final_check/MCA1_copy_short/pmid33448928 /zp1/data/plyu3/CellAnn_final_check/MCA1_copy_success/
+
+mv /zp1/data/plyu3/CellAnn_final_check/MCA1_copy/pmid32413319 /zp1/data/plyu3/CellAnn_final_check/MCA1_copy_success/
+
+####
+#### Next we will go to the old server to see the remaining datasets ########
+#### first we will process one sample to see the reason ####
+
+
+ssh plyu3@10.181.57.113
+njd$rft1
+
+
+conda activate scvi-env
+
+####
+####
+####
+
+python
+
+file_list_path = "/zp1/data/plyu3/HCL12_copy/"
+
+import pandas as pd
+import os
+
+def list_subfolder_paths(folder_path):
+    subfolder_paths = [os.path.join(folder_path, f) for f in os.listdir(folder_path) if os.path.isdir(os.path.join(folder_path, f))]
+    return subfolder_paths
+
+subfolders = list_subfolder_paths(file_list_path)
+
+
+import sys
+custom_module_path = '/zp1/data/plyu3/HCL12_code/'
+sys.path.append(custom_module_path)
+
+
+import cellann_final
+import os
+
+file_need_path_all = subfolders
+
+file_need_path = file_need_path_all[3]
+
+os.chdir(file_need_path)
+
+anndata_obj_name = cellann_final.load_anndata_from_folder_tag(file_need_path)
+
+anndata_obj = cellann_final.load_anndata_from_folder(file_need_path)
+
+cellann_final.Process_anndatasets(anndata_obj,anndata_obj_name)
+
+import subprocess
+import argparse
+import os
+import re
+import pandas as pd
+import scanpy as sc
+import scvi
+import anndata
+import scipy.io as sio
+import copy
+
+sc.pp.highly_variable_genes(
+        anndata_obj,
+        flavor="cell_ranger",
+        n_top_genes=3000,
+        layer="counts",
+        subset=True
+)
+
+
+scvi.model.SCVI.setup_anndata(anndata_obj, layer="counts", batch_key="batch")
+vae = scvi.model.SCVI(anndata_obj, n_layers=2, n_latent=30, gene_likelihood="nb")
+vae.train()
+
+
+#####################
+##################### transfer good samples to 
+##################### 
+
+ssh plyu3@10.181.57.115
+U[9C20&&
+
+###################### 
+######################
+######################
+
+ssh plyu3@10.181.57.113
+njd$rft1
+
+conda activate scvi-env
+
+####
+####
+####
+
+python
+
+file_list_path = "/zp1/data/plyu3/HCL12_copy/"
+
+conda activate Signac2
+
+#####
+#####
+#####
+
+setwd("/zp1/data/plyu3/HCL12_copy/")
+
+setwd("NO110__pmid34035279_Fetal")
+
+files = list.files()
+
+mat = Matrix::readMM("pmid34035279_Fetal__HCL1expression_matrix.mtx")
+
+summary(Matrix::rowSums(mat))
+summary(Matrix::colSums(mat))
+
+gene = read.table("pmid34035279_Fetal__HCL1gene_metadata.csv",sep=',',header=T)
+cell = read.table("pmid34035279_Fetal__HCL1cell_metadata.csv",sep=',',header=T)
+
+
+cell_new_index = sample(1:dim(cell)[1],50000)
+
+cell_new = cell[cell_new_index,]
+mat_new = mat[cell_new_index,]
+
+k = mat_new < 0 
+mat_new[k] = 0
+
+Matrix::writeMM(mat_new,file="pmid34035279_Fetal__HCL1expression_matrix.mtx")
+
+write.csv(cell_new, file = "pmid34035279_Fetal__HCL1cell_metadata.csv", row.names = FALSE)
+
+#######
+#######
+#######
+
+setwd("/zp1/data/plyu3/HCL12_copy/NO76__pmid32049002")
+
+files = list.files()
+
+mat = Matrix::readMM("pmid32049002__HCL1expression_matrix.mtx")
+
+summary(Matrix::rowSums(mat))
+summary(Matrix::colSums(mat))
+
+gene = read.table("pmid32049002__HCL1gene_metadata.csv",sep=',',header=T)
+cell = read.table("pmid32049002__HCL1cell_metadata.csv",sep=',',header=T)
+
+
+cell_new_index = sample(1:dim(cell)[1],50000)
+
+cell_new = cell[cell_new_index,]
+mat_new = mat[cell_new_index,]
+
+k = mat_new < 0 
+mat_new[k] = 0
+
+Matrix::writeMM(mat_new,file="pmid32049002__HCL1expression_matrix.mtx")
+
+write.csv(cell_new, file = "pmid32049002__HCL1cell_metadata.csv", row.names = FALSE)
+
+###########
+###########
+
+target_folder = "/zp1/data/plyu3/HCL12_copy_success"
+from_folder = "/zp1/data/plyu3/HCL12_copy"
+
+###########
+###########
+	#########
+	setwd(from_folder)
+	##########
+	sub_folder = list.files()
+	##########
+	for(j in 1:length(sub_folder)){
+		tmp = sub_folder[j]
+		command = paste("mv",tmp,"/zp1/data/plyu3/HCL12_copy_success")
+		system(command,wait=F)
+	}
+
+############
+############ Next from our old server to new server #######
+############
+
+scp -r /zp1/data/plyu3/HCL12_copy_success plyu3@10.181.57.115:/zp1/data/plyu3/CellAnn_final_check/
+U[9C20&&
+
+#############
+#############
+#############
+
+find the background files and copy them into a new folder：
+
+##############
+##############
+
+
+ssh plyu3@10.181.57.115
+U[9C20&&
+
+conda activate seurat4
+R
+
+
+setwd("/zp1/data/plyu3/CellAnn_final_check")
+library(readxl)
+data <- data.frame(read_xlsx("check_list3_update5.xlsx"))
+
+table(data$Background)
+
+#####
+##### we will make a new folder to copy these background files !!! ########
+#####
+
+index = c("HCL1","HCL2")
+
+target_folder = "/zp1/data/plyu3/CellAnn_final_check/background_merge"
+
+#####
+##### 
+
+mkdir /zp1/data/plyu3/CellAnn_final_check/background_merge
+data$BackTAG = 'NotFind!'
+
+index = c("HCL1","HCL2")
+
+index = c("MCA1")
+
+index = c("HCL","MCA")
+
+Copy_background_file <- function(data,index){
+	#########
+	if(index[1] %in% c("HCL1","HCL2") == T){
+		dat_cl = data[which(data$Background %in% index == T),]
+		########
+		from_folder = "/zp1/data/plyu3/CellAnn_final_check/HCL12_copy_success"
+		########
+		setwd(from_folder)
+		########
+		dat_cl$BackTAG = "Notfind!"
+		########
+		for(j in 1:length(dat_cl$PMID)){
+			tmp_tag = paste0("NO",rownames(dat_cl)[j],"__")
+			#########
+			tmp_folder_list = list.files(from_folder)
+			#########
+			k = grep(tmp_tag,tmp_folder_list)
+			########
+			if(length(k) == 1){
+				dat_cl$BackTAG[j] = tmp_folder_list[k]
+				####### cp the folder to a new folder ###################
+				command = paste("cp -r",tmp_folder_list[k],target_folder)
+				print(command)
+				#######
+				system(command,wait=F)
+			}
+		}
+		###
+		###
+		k2 = which(data$Background %in% index == T)
+		data$BackTAG[k2] = dat_cl$BackTAG
+	}
+	##############
+	if(index %in% c("MCA1") == T){
+		dat_cl = data[which(data$Background %in% index == T),]
+		########
+		from_folder = "/zp1/data/plyu3/CellAnn_final_check/MCA1_copy_success"
+		########
+		setwd(from_folder)
+		########
+		dat_cl$BackTAG = "Notfind!"
+		########
+		for(j in 1:length(dat_cl$PMID)){
+			tmp_tag = paste0("NO",rownames(dat_cl)[j],"__")
+			#########
+			tmp_folder_list = list.files(from_folder)
+			#########
+			k = grep(tmp_tag,tmp_folder_list)
+			########
+			if(length(k) == 1){
+				dat_cl$BackTAG[j] = tmp_folder_list[k]
+				####### cp the folder to a new folder ###################
+				command = paste("cp -r",tmp_folder_list[k],target_folder)
+				print(command)
+				#######
+				system(command,wait=T)
+			}
+		}
+		###
+		###
+		k2 = which(data$Background %in% index == T)
+		data$BackTAG[k2] = dat_cl$BackTAG
+	}
+	###############
+	if(index %in% c("M_Tabula_Muris") == T){
+		dat_cl = data[which(data$Background %in% index == T),]
+		########
+		########
+		dat_cl$BackTAG = "Notfind!"
+		########
+		for(j in 1:length(dat_cl$PMID)){
+			tmp_tag = paste0("NO",rownames(dat_cl)[j],"__",dat_cl$PMID[j])
+			#########
+			files_tmp = list.files(dat_cl$Folder[j])
+			#########
+			k = grep("_backmergeCorrect_",files_tmp)
+			########
+			if(length(k) > 0){
+				dat_cl$BackTAG[j] = tmp_tag
+				####### cp the folder to a new folder ###################
+				command = paste0("cp -r ",dat_cl$Folder[j]," ",target_folder,"/",tmp_tag)
+				#######
+				system(command,wait=F)
+			}
+		}
+		###
+		###
+		k2 = which(data$Background %in% index == T)
+		data$BackTAG[k2] = dat_cl$BackTAG
+	}
+	#############
+	if(index[1] %in% c("HCL","MCA") == T){
+		dat_cl = data[which(data$Background %in% index == T),]
+		########
+		########
+		dat_cl$BackTAG = "Notfind!"
+		########
+		for(j in 1:length(dat_cl$PMID)){
+			tmp_tag = paste0("NO",rownames(dat_cl)[j],"__",dat_cl$PMID[j])
+			#########
+			files_tmp = list.files(dat_cl$Folder[j])
+			#########
+			k = grep("_backmergeCorrect_",files_tmp)
+			########
+			if(length(k) > 0){
+				dat_cl$BackTAG[j] = tmp_tag
+				####### cp the folder to a new folder ###################
+				command = paste0("cp -r ",dat_cl$Folder[j]," ",target_folder,"/",tmp_tag)
+				print(command)
+				#######
+				system(command,wait=T)
+			}
+		}
+		###
+		###
+		k2 = which(data$Background %in% index == T)
+		data$BackTAG[k2] = dat_cl$BackTAG
+	}
+
+}
+
+
+setwd("/zp1/data/plyu3/CellAnn_final_check")
+save(data,file='data_process1')
+
+
+####
+grep("33448928",dat_cl$PMID)
+####
+
+
+ssh plyu3@10.181.57.115
+U[9C20&&
+
+conda activate seurat4
+R
+
+setwd("/zp1/data/plyu3/CellAnn_final_check")
+
+####
+####
+
+load("data_process1")
+
+data$BackTAG_stats = "No"
+
+for(i in 1:length(data$BackTAG)){
+	########
+	print(i)
+	########
+	setwd("/zp1/data/plyu3/CellAnn_final_check/background_merge")
+	########
+	tmp = paste0("/zp1/data/plyu3/CellAnn_final_check/background_merge/",data$BackTAG[i])
+	########
+	files = list.files(tmp)
+	index = grep("_backmergeCorrect",files)
+	########
+	if(length(index) == 4){
+		data$BackTAG_stats[i] = "Yes"
+	}
+}
+
+k = which(data$BackTAG_stats == "No")
+
+table(data$Background[k])
+
+####
+#### 需要把上面的值重新run以下 ###
+####
+
+#### find markers for each samples ##################
+#### 先在老的服务器上面试一下 ###########################
+####
+
+
+
+#### 
+####
+
+ssh plyu3@10.181.57.113
+njd$rft1
+
+conda activate Signac2
+
+cd /zp1/data/plyu3/HCL12_copy_success
+
+folder_list = list.files("/zp1/data/plyu3/HCL12_copy_success")
+folder_list = paste0("/zp1/data/plyu3/HCL12_copy_success/",folder_list)
+
+library(parallel)
+
+cl <- makeCluster(15)
+
+results <- parLapply(cl,folder_list,Prepare_Seurat_file_in_the_folder_BACK_STEP2)
+
+stopCluster(cl)
+
+
+input_folder = "/zp1/data/plyu3/HCL12_copy_success/NO81__pmid32123174"
+
+
+runDEGs_Ref <- function(Seurat_Obj,method='COSG',idents='celltype',num_of_genes = 100){
+	Idents(Seurat_Obj) = idents
+	#######
+	library(COSG)
+	#######
+	if(method == 'COSG'){
+		marker_cosg <- cosg(
+ 				Seurat_Obj,
+ 				groups=c('all'),
+ 				assay='RNA',
+ 				slot='data',
+ 				mu=1,
+ 				n_genes_user=num_of_genes)
+		res = marker_cosg$names
+	}
+	#######
+	#######
+	return(res)
+}
+
+######
+
+Prepare_Seurat_file_in_the_folder_BACK_STEP2 <- function(input_folder){
+	#########
+	source("/zp1/data/plyu3/HCL12_code/background_prepare.R")
+	#########
+	library(Seurat)
+	##### we first go into the folder ######
+	setwd(input_folder)
+	##### 'Seurat_files_exists:' #####
+	files = list.files()
+	#####
+	##### searching seurat files ########
+	##### 
+	k = grep("_backmergeCorrect.mtx$",files)
+	#####
+	#########
+	seurat_file = files[k]
+	library(Matrix)
+	seurat_obj_Mat <- readMM(seurat_file)
+	seurat_obj_Mat <- round(seurat_obj_Mat*1e5)
+	seurat_obj_Mat <- t(seurat_obj_Mat)
+	########
+	cell_file = files[grep("_backmergeCorrect_Cells.csv",files)]
+	seurat_obj_cell <- read.table(cell_file,sep=',',header=T)
+	colnames(seurat_obj_Mat) <- seurat_obj_cell$cell_id
+	gene_file = files[grep("_backmergeCorrect_Genes.csv",files)]
+	seurat_obj_gene <- read.table(gene_file,sep=',',header=T)
+	rownames(seurat_obj_Mat) <- seurat_obj_gene$gene_name
+	#########
+	######### Performing log-normalization ###########
+	##### first we convert matrix to counts ##########
+	seurat_obj <- CreateSeuratObject(seurat_obj_Mat)
+	seurat_obj@meta.data = cbind(seurat_obj@meta.data,seurat_obj_cell)
+	seurat_obj <- NormalizeData(seurat_obj)
+	#####
+	head(colSums(seurat_obj[['RNA']]@counts))
+	##### bg-Markers #####
+	background_marker = runDEGs_Ref(seurat_obj,method='COSG',idents='leiden',num_of_genes=50)
+	##### Next is the Avg Mat ##########
+	##### first we will calculate the cluster Avg Mat ##########
+	#####
+	background_avg = CellAnn_Avg_Mat(seurat_obj[['RNA']]@counts,seurat_obj$leiden)
+	##### background_avg ###################
+	background_ref_avg = CellAnn_Avg_Mat_ref(background_avg,seurat_obj_cell)
+	#####
+	##### save background_marker #####
+	##### save background_avg ########
+	##### save background_ref_avg ####
+	files_tag = gsub("_backmergeCorrect_Cells.csv","",cell_file)
+	saveRDS(background_marker,file=paste0(files_tag,"_bg_marker"))
+	saveRDS(background_avg,file=paste0(files_tag,"_bg_avg_mat"))
+	saveRDS(background_ref_avg,file=paste0(files_tag,"_ref_bg_avg_mat"))
+	#####
+	print("Finished !!!")
+}
+
+#########################
+#########################
+
+
+
+
+
+#########################
+#########################
+
+CellAnn_Avg_Mat <- function(data_mat,data_cluster,scale_factor=10000){
+	######
+	tag_cluster = unname(data_cluster)
+	tag_cluster_level = levels(as.factor(tag_cluster))
+	###### normalized back datasets ######
+	print(paste('Sums:',head(colSums(data_mat[,c(1:2)]))))
+	###### data_mat is 1e5 normalize #######
+	merge_mat = c()
+	for(i in 1:length(tag_cluster_level)){
+		index = which(data_cluster %in% tag_cluster_level[i] == T)
+		index_mat = data_mat[,index]
+		######
+		index_sum = rowSums(index_mat)
+		######
+		merge_mat = c(merge_mat,index_sum)
+	}
+	###
+	merge_mat = matrix(merge_mat,nrow=dim(data_mat)[1])
+	###
+	rownames(merge_mat) = rownames(data_mat)
+	colnames(merge_mat) = tag_cluster_level
+	### colSums(merge_mat)
+	scale = colSums(merge_mat)/scale_factor
+	merge_mat = sweep(merge_mat,2,scale,FUN='/')
+	### default norm ####
+	merge_mat = round(log(merge_mat+1),3)
+	return(merge_mat)
+	### return is a log transformed matrix ####
+}
+
+#######
+#######
+
+CellAnn_Avg_Mat_ref <- function(background_avg,seurat_obj_cell){
+	########################
+	### built a matrix #####
+	########################
+	ref_celltype = table(seurat_obj_cell$celltype[which(seurat_obj_cell$batch == "batch_sub")])
+	########################
+	matrix_Wb = matrix(0,nrow=length(names(ref_celltype)),ncol=dim(background_avg)[2])
+	#######
+	rownames(matrix_Wb) <- names(ref_celltype)
+	colnames(matrix_Wb) <- colnames(background_avg)
+	#######
+	for(i in 1:dim(matrix_Wb)[1]){
+		for(j in 1:dim(matrix_Wb)[2]){
+			tmp_i = rownames(matrix_Wb)[i]
+			tmp_j = colnames(matrix_Wb)[j]
+			#####
+			k = which(seurat_obj_cell$celltype == tmp_i & seurat_obj_cell$leiden == tmp_j)
+			matrix_Wb[i,j] = length(k)
+		}
+	}
+	########
+	matrix_Wb = sweep(matrix_Wb,1,rowSums(matrix_Wb),FUN='/')
+	matrix_Wb = round(matrix_Wb,3)
+	matrix_Wb = t(matrix_Wb)
+	########
+	######## OK!!! Next !!!! #######
+	########
+	Eb = as.matrix(background_avg)
+	########
+	Res_mat = Eb %*% matrix_Wb
+	########
+	########
+	return(Res_mat)
+}
+
+
+###### MCA1 ######
+
+ssh plyu3@10.181.57.115
+U[9C20&&
+
+conda activate seurat4
+R
+
+setwd("/zp1/data/plyu3/CellAnn_final_check")
+
+folder_list = list.files("/zp1/data/plyu3/CellAnn_final_check/MCA1_copy_success")
+folder_list = paste0("/zp1/data/plyu3/CellAnn_final_check/MCA1_copy_success/",folder_list)
+
+Prepare_Seurat_file_in_the_folder_BACK_STEP2 <- function(input_folder){
+	#########
+	source("/zp1/data/plyu3/CellAnn_final_check/MCA1_code/background_prepare.R")
+	#########
+	library(Seurat)
+	##### we first go into the folder ######
+	setwd(input_folder)
+	##### 'Seurat_files_exists:' #####
+	files = list.files()
+	#####
+	##### searching seurat files ########
+	##### 
+	k = grep("_backmergeCorrect.mtx$",files)
+	#####
+	#########
+	seurat_file = files[k]
+	library(Matrix)
+	seurat_obj_Mat <- readMM(seurat_file)
+	seurat_obj_Mat <- round(seurat_obj_Mat*1e5)
+	seurat_obj_Mat <- t(seurat_obj_Mat)
+	########
+	cell_file = files[grep("_backmergeCorrect_Cells.csv",files)]
+	seurat_obj_cell <- read.table(cell_file,sep=',',header=T)
+	colnames(seurat_obj_Mat) <- seurat_obj_cell$cell_id
+	gene_file = files[grep("_backmergeCorrect_Genes.csv",files)]
+	seurat_obj_gene <- read.table(gene_file,sep=',',header=T)
+	rownames(seurat_obj_Mat) <- seurat_obj_gene$gene_name
+	#########
+	######### Performing log-normalization ###########
+	##### first we convert matrix to counts ##########
+	seurat_obj <- CreateSeuratObject(seurat_obj_Mat)
+	seurat_obj@meta.data = cbind(seurat_obj@meta.data,seurat_obj_cell)
+	seurat_obj <- NormalizeData(seurat_obj)
+	#####
+	head(colSums(seurat_obj[['RNA']]@counts))
+	##### bg-Markers #####
+	background_marker = runDEGs_Ref(seurat_obj,method='COSG',idents='leiden',num_of_genes=50)
+	##### Next is the Avg Mat ##########
+	##### first we will calculate the cluster Avg Mat ##########
+	#####
+	background_avg = CellAnn_Avg_Mat(seurat_obj[['RNA']]@counts,seurat_obj$leiden)
+	##### background_avg ###################
+	background_ref_avg = CellAnn_Avg_Mat_ref(background_avg,seurat_obj_cell)
+	#####
+	##### save background_marker #####
+	##### save background_avg ########
+	##### save background_ref_avg ####
+	files_tag = gsub("_backmergeCorrect_Cells.csv","",cell_file)
+	saveRDS(background_marker,file=paste0(files_tag,"_bg_marker"))
+	saveRDS(background_avg,file=paste0(files_tag,"_bg_avg_mat"))
+	saveRDS(background_ref_avg,file=paste0(files_tag,"_ref_bg_avg_mat"))
+	#####
+	print("Finished !!!")
+}
+
+library(parallel)
+
+cl <- makeCluster(25)
+
+results <- parLapply(cl,folder_list,Prepare_Seurat_file_in_the_folder_BACK_STEP2)
+
+stopCluster(cl)
+
+
+
+setwd("/zp1/data/plyu3/CellAnn_final_check")
+library(readxl)
+data <- data.frame(read_xlsx("check_list3_update5.xlsx"))
+
+#####
+table(data$Background)
+#####
+
+index = c("HCL","MCA","M_Tabula_Muris")
+dat_cl = data[which(data$Background %in% index == T),]
+
+
+dat_cl
+
+folder_list = dat_cl$Folder
+
+library(parallel)
+
+cl <- makeCluster(30)
+
+results <- parLapply(cl,folder_list,Prepare_Seurat_file_in_the_folder_BACK_STEP2)
+
+stopCluster(cl)
+
+##########
+##########
+##########
+
+
+
+ssh plyu3@10.181.57.113
+njd$rft1
+
+conda activate Signac2
+
+########## copy the avg mat and marker to a new folder ##########
+##########
+
+mkdir /zp1/data/plyu3/HCL12_copy_success_marker
+
+##########
+
+folder = "/zp1/data/plyu3/HCL12_copy_success"
+
+files = list.files(folder)
+
+for(i in 1:length(files)){
+	##########
+	tmp_folder = paste0("/zp1/data/plyu3/HCL12_copy_success/",files[i])
+	setwd(tmp_folder)
+	tmp_tag = sapply(strsplit(files[i],split="__"),function(x) x[[1]])
+	##########
+	tmp_files = list.files(tmp_folder)
+	##########
+	m1 = grep("_bg_avg_mat$",tmp_files)
+	m2 = grep("_bg_marker$",tmp_files)
+	##########
+	files_need = tmp_files[c(m1,m2)]
+	#########
+	files_need_new = paste0(tmp_tag,"__",files_need)
+	#########
+	for(j in 1:length(files_need)){
+		command = paste0("cp ",tmp_folder,"/",files_need[j]," ","/zp1/data/plyu3/HCL12_copy_success_marker/",files_need_new[j])
+		print(command)
+		system(command,wait=F)
+	}
+
+}
+#######
+#######
+
+scp -r  /zp1/data/plyu3/HCL12_copy_success_marker plyu3@10.181.57.115:/zp1/data/plyu3/CellAnn_final_check/HCL12_copy_success_marker
+
+#######
+####### on the new server #####
+#######
+
+
+
+
+
+ssh plyu3@10.181.57.115
+U[9C20&&
+
+conda activate seurat4
+
+########## copy the avg mat and marker to a new folder ##########
+##########
+
+mkdir /zp1/data/plyu3/CellAnn_final_check/MCA1_copy_success_marker
+
+##########
+
+folder = "/zp1/data/plyu3/CellAnn_final_check/MCA1_copy_success"
+
+files = list.files(folder)
+
+for(i in 1:length(files)){
+	##########
+	tmp_folder = paste0("/zp1/data/plyu3/CellAnn_final_check/MCA1_copy_success/",files[i])
+	setwd(tmp_folder)
+	tmp_tag = sapply(strsplit(files[i],split="__"),function(x) x[[1]])
+	##########
+	tmp_files = list.files(tmp_folder)
+	##########
+	m1 = grep("_bg_avg_mat$",tmp_files)
+	m2 = grep("_bg_marker$",tmp_files)
+	##########
+	files_need = tmp_files[c(m1,m2)]
+	#########
+	files_need_new = paste0(tmp_tag,"__",files_need)
+	#########
+	for(j in 1:length(files_need)){
+		command = paste0("cp ",tmp_folder,"/",files_need[j]," ","/zp1/data/plyu3/CellAnn_final_check/MCA1_copy_success_marker/",files_need_new[j])
+		print(command)
+		system(command,wait=F)
+	}
+
+}
+
+
+
+
+######
+
+
+setwd("/zp1/data/plyu3/CellAnn_final_check")
+library(readxl)
+data <- data.frame(read_xlsx("check_list3_update5.xlsx"))
+
+#####
+table(data$Background)
+#####
+
+index = c("HCL","MCA","M_Tabula_Muris")
+data$tag = paste0("NO",1:length(data$Folder))
+dat_cl = data[which(data$Background %in% index == T),]
+
+folder_list = dat_cl$Folder
+folder_tag = dat_cl$tag
+
+
+for(i in 1:length(folder_list)){
+	##########
+	tmp_folder = folder_list[i]
+	setwd(tmp_folder)
+	tmp_tag = folder_tag[i]
+	##########
+	tmp_files = list.files(tmp_folder)
+	##########
+	m1 = grep("_bg_avg_mat$",tmp_files)
+	m2 = grep("_bg_marker$",tmp_files)
+	##########
+	files_need = tmp_files[c(m1,m2)]
+	#########
+	files_need_new = paste0(tmp_tag,"__",files_need)
+	#########
+	for(j in 1:length(files_need)){
+		command = paste0("cp ",tmp_folder,"/",files_need[j]," ","/zp1/data/plyu3/CellAnn_final_check/MCA1_copy_success_marker/",files_need_new[j])
+		print(command)
+		system(command,wait=F)
+	}
+
+}
+
+
+
+setwd("/zp1/data/plyu3/CellAnn_final_check/HCL12_copy_success_marker")
+
+files1 = list.files("/zp1/data/plyu3/CellAnn_final_check/HCL12_copy_success_marker")
+files1_number = sapply(strsplit(files1,split="__"),function(x) x[[1]])
+files1_number = gsub("NO","",files1_number)
+files1_number = as.numeric(files1_number[!duplicated(files1_number)])
+
+files2 = list.files("/zp1/data/plyu3/CellAnn_final_check/MCA1_copy_success_marker/")
+files2_number = sapply(strsplit(files2,split="__"),function(x) x[[1]])
+files2_number = gsub("NO","",files2_number)
+files2_number = as.numeric(files2_number[!duplicated(files2_number)])
+
+files_all = c(files1_number,files2_number)
+files_all = sort(files_all)
+
+
+###########
+###########
+###########
+
+###########
+###########
+
+
+ssh plyu3@10.181.57.115
+U[9C20&&
 
 
 
